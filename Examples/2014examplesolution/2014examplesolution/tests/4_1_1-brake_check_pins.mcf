@@ -1,0 +1,1 @@
+[true* . a_setLock(INSERTED) . (!a_setLock(REMOVED))* . a_setBrake(OFF)]false

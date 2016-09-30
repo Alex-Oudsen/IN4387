@@ -1,0 +1,286 @@
+
+% Complete Bridge LTS Version 1.
+% This file models the bridge's components:
+% P Presigns, S Stopsigns, B Barriers,
+% L Locking Pins
+
+sort 	% Multi-Objects
+	PreSignID 		= struct P1 | P2 | P3 | P4;
+	StopSignID 	= struct S1 | S2 | S3 | S4;
+	BarrierID 		= struct B1 | B2 | B3 | B4;
+	LockID 		= struct L1 | L2;
+
+	% States
+	State 		= struct ON | OFF;		 	% Pre-signs, Stop-signs, Motor brake 
+	barState 		= struct OPEN | CLOSED;	 	% Barriers
+	motorState 	= struct UP | DOWN | MOTOROFF;	 	% Motor direction	
+	lockState 		= struct INSERTED | REMOVED;	 	% Locking pins
+	sensorState 	= struct DETECTED | UNDETECTED;	% Sensors
+	
+	% Semaphore
+	%Semaphore 	= struct PINBRAKE | BRAKEMOTOR;
+	%semState		= struct LOCK | UNLOCK;
+
+	% Sensors
+	
+
+	% Current action state
+	Changing 		= struct CHANGING | STATIC;
+	
+
+map	% Matching Signs
+	matchStopSign: 	PreSignID -> StopSignID;
+	matchPreSign: 	StopSignID -> PreSignID;
+
+	% Barrier -> StopSign
+	matchStopSign1: 	BarrierID -> StopSignID;
+	matchStopSign2: 	BarrierID -> StopSignID;
+
+	% StopSign -> Barrier
+	matchBarrier1: 	StopSignID -> BarrierID;
+	matchBarrier2: 	StopSignID -> BarrierID;
+
+	% Exit <-> Entry
+	matchExitBarrier: 	BarrierID -> BarrierID;
+	matchEntryBarrier:	BarrierID -> BarrierID;
+
+	% Check Entry/Exit
+	isEntry:		BarrierID -> Bool;
+
+eqn	% PreSign <-> StopSign
+	matchStopSign(P1) = S1;
+	matchStopSign(P2) = S2;
+	matchStopSign(P3) = S3;
+	matchStopSign(P4) = S4;
+	matchPreSign(S1) = P1;
+	matchPreSign(S2) = P2;
+	matchPreSign(S3) = P3;
+	matchPreSign(S4) = P4;
+
+	% Barrier -> StopSign
+	matchStopSign1(B1) = S1;
+	matchStopSign1(B2) = S1;
+	matchStopSign1(B3) = S3;
+	matchStopSign1(B4) = S3;
+	matchStopSign2(B1) = S2;
+	matchStopSign2(B2) = S2;
+	matchStopSign2(B3) = S4;
+	matchStopSign2(B4) = S4;
+
+	% Exit <-> Entry
+	matchExitBarrier(B1) = B2;
+	matchExitBarrier(B4) = B3;
+	matchEntryBarrier(B2) = B1;
+	matchEntryBarrier(B3) = B4;
+
+	% Check Entry/Exit
+	isEntry(B1) = true;
+	isEntry(B2) = false;
+	isEntry(B3) = false;
+	isEntry(B4) = true;
+
+act	
+	% External commands
+	user_setPreSign 	: PreSignID 	# State;
+	user_setStopSign 	: StopSignID 	# State;
+	user_setBarrier 	: BarrierID 	# barState;
+	user_setLockpin 	: LockID 		# lockState;
+	user_setMotorBrake 			: State;
+	user_setMotor 			: motorState;
+
+	% Internal stuff
+	% Actions
+	a_setPre 		: PreSignID 	# State;
+	a_setStop 		: StopSignID 	# State;
+	a_setBar		: BarrierID 	# barState;
+	a_setLock 		: LockID 		# lockState;
+	a_setBrake 			: State;
+	a_setMotor 			: motorState;
+
+	% Communication
+	s_preState, 	r_preState, 	comm_preState 	: PreSignID 	# State;
+	s_stopState, 	r_stopState, 	comm_stopState 	: StopSignID 	# State;
+	s_barState,  	r_barState,  	comm_barState 	: BarrierID 	# barState;
+	s_lockState, 	r_lockState, 	comm_lockState 	: LockID	 	# lockState;
+	s_brakeState, 	r_brakeState, 	comm_brakeState 			: State;
+	s_motorState, 	r_motorState, 	comm_motorState 			: motorState;
+
+	% Sensors
+	sense_barrierOpen, 	sense_barrierClosed	: BarrierID 	#sensorState;
+	sense_bridgeOpen, 	sense_bridgeClosed 	: sensorState;
+	sense_motorState 			: motorState;
+	
+	% Semaphore
+	%s_sem, r_sem, comm_sem 		: Semaphore	# semState;
+
+
+proc	
+	PreSign(p: PreSignID, state: State, c: Changing) =
+	 % Receive command, start changing
+	  (state == ON) -> user_setPreSign(p, OFF) . PreSign(c = CHANGING)
+	 % Receive confirmation, do stuff
+	+ ((state == ON) && (c == CHANGING)) -> r_stopState(matchStopSign(p), OFF) . a_setPre(p, OFF) . PreSign(state = OFF, c = STATIC)
+	 % receive conflicting state, stop changing
+	+ ((state == ON) && (c == CHANGING)) -> r_stopState(matchStopSign(p), ON) . PreSign(c = STATIC) 
+	 % turning on pre-signs shall always be allowed, forever, for now into eternity
+	+ (state == OFF) -> user_setPreSign(p, ON) . a_setPre(p, ON) . PreSign(state = ON, c = STATIC)
+	 % no-ops, mostly
+	+ (state == OFF) -> user_setPreSign(p, OFF) . PreSign(c = STATIC)
+	+ (state == ON) -> user_setPreSign(p, ON) . PreSign(c = STATIC)
+	 % send state, stop changing
+	+ s_preState(p, state) . PreSign(c = STATIC);
+	
+	StopSign(s: StopSignID, state: State, c: Changing) =
+	 % Receive command, start changing
+	  (state == OFF) -> user_setStopSign(s, ON) . StopSign(c = CHANGING)
+	+ (state == ON) -> user_setStopSign(s, OFF) . StopSign(c = CHANGING)
+	 % Receive confirmation, do stuff
+	+ ((state == OFF) && (c == CHANGING)) -> r_preState(matchPreSign(s), ON) . a_setStop(s, ON) . StopSign(state=ON, c = STATIC)
+	+ ((state == ON) && (c == CHANGING)) -> r_barState(B1, OPEN) . r_barState(B4, OPEN) . a_setStop(s, OFF) . StopSign(state = OFF, c = STATIC)
+	 % Receive conficting state, stop changing
+	+ ((state == OFF) && (c == CHANGING)) -> r_preState(matchPreSign(s), OFF) . StopSign(c = STATIC)
+	+ ((state == ON) && (c == CHANGING)) -> r_barState(B1, CLOSED) . StopSign(c = STATIC)
+	+ ((state == ON) && (c == CHANGING)) -> r_barState(B4, CLOSED) . StopSign(c = STATIC)
+	 % no-ops, mostly
+	+ (state == OFF) -> user_setStopSign(s, OFF) .StopSign(c = STATIC)
+	+ (state == ON) -> user_setStopSign(s, ON) . StopSign(c = STATIC)
+	 % send state, stop changing
+	+ s_stopState(s, state) . StopSign(c = STATIC);
+
+
+	EntryBarrier(b: BarrierID, state: barState, c: Changing) =
+	 % Receive a command, start changing
+	  (state == OPEN) -> user_setBarrier(b, CLOSED) . EntryBarrier(c = CHANGING)
+	+ (state == CLOSED) -> user_setBarrier(b, OPEN) . EntryBarrier(c = CHANGING)
+	 % receive confirmation, do stuff
+	% A barrier may only be closed if the corresponding stop-signs are turned on.
+	+ ((state == OPEN) && (c == CHANGING)) -> r_stopState(matchStopSign1(b), ON) . r_stopState(matchStopSign2(b), ON) . a_setBar(b, CLOSED) . EntryBarrier(state = CLOSED, c = STATIC)
+	% A barrier may only be opened if the exit barrier is open.
+	+ ((state == CLOSED) && (c == CHANGING)) -> r_barState(matchExitBarrier(b), OPEN) . sense_barrierOpen(matchExitBarrier(b), DETECTED) . a_setBar(b, OPEN) . EntryBarrier(state = OPEN, c = STATIC)
+	 % receive incompatible states, stop changing
+	+ ((state == OPEN) && (c == CHANGING)) -> r_stopState(matchStopSign1(b), OFF) . EntryBarrier(c = STATIC)
+	+ ((state == OPEN) && (c == CHANGING)) -> r_stopState(matchStopSign2(b), OFF) . EntryBarrier(c = STATIC)
+	+ ((state == CLOSED) && (c == CHANGING)) -> r_barState(matchExitBarrier(b), CLOSED) . EntryBarrier(c = STATIC)
+	+ ((state == CLOSED) && (c == CHANGING)) -> sense_barrierOpen(matchExitBarrier(b), UNDETECTED) . EntryBarrier(c = STATIC)
+	 % no-ops, mostly
+	+ (state == OPEN) -> user_setBarrier(b, OPEN) . EntryBarrier(c = STATIC)
+	+ (state == CLOSED) -> user_setBarrier(b, CLOSED) . EntryBarrier(c = STATIC)
+	 % send state, stop changing
+	+ s_barState(b, state) . EntryBarrier(c = STATIC);
+
+	ExitBarrier(b: BarrierID, state: barState, c: Changing) =
+	 % Receive a command, start changing
+	  (state == OPEN) -> user_setBarrier(b, CLOSED) . ExitBarrier(c = CHANGING)
+	+ (state == CLOSED) -> user_setBarrier(b, OPEN) . ExitBarrier(c = CHANGING)
+	 % receive confirmation, do stuff
+	% A barrier may only be closed if the entry barrier is closed
+	+ ((state == OPEN) && (c == CHANGING)) -> r_barState(matchEntryBarrier(b), CLOSED) . sense_barrierClosed(matchEntryBarrier(b), DETECTED) . a_setBar(b, CLOSED) . ExitBarrier(state = CLOSED, c = STATIC)
+	% A barrier may only be opened if the locking pins are both inserted.
+	+ ((state == CLOSED) && (c == CHANGING)) -> r_lockState(L1, INSERTED) . r_lockState(L2, INSERTED) . a_setBar(b, OPEN) . ExitBarrier(state=OPEN, c = STATIC)
+	 % receive incompatible states, stop changing
+	+ ((state == OPEN) && (c == CHANGING)) -> r_barState(matchEntryBarrier(b), OPEN) . ExitBarrier(c = STATIC)
+	+ ((state == OPEN) && (c == CHANGING)) -> sense_barrierClosed(matchEntryBarrier(b), UNDETECTED) . ExitBarrier(c = STATIC)
+	+ ((state == CLOSED) && (c == CHANGING)) -> r_lockState(L1, REMOVED) . ExitBarrier(c = STATIC)
+	+ ((state == CLOSED) && (c == CHANGING)) -> r_lockState(L2, REMOVED) . ExitBarrier(c = STATIC)
+	 % no-ops, mostly
+	+ (state == OPEN) -> user_setBarrier(b, OPEN) . ExitBarrier(c = STATIC)
+	+ (state == CLOSED) -> user_setBarrier(b, CLOSED) . ExitBarrier(c = STATIC)
+	 % send state, stop changing
+	+ s_barState(b, state) . ExitBarrier(c = STATIC);
+
+
+	Lockpin(l: LockID, state: lockState, c: Changing) =
+	 % receive command, set changing state
+	  (state == INSERTED) -> user_setLockpin(l, REMOVED) . Lockpin(c=CHANGING)
+	+ (state == REMOVED) -> user_setLockpin(l, INSERTED) . Lockpin(c=CHANGING)
+	 % receive confirmation, do stuff
+% FIXME! possible deadlock here!!
+	+ ((state == REMOVED) && (c == CHANGING)) -> r_brakeState(ON) . sense_bridgeClosed(DETECTED) . a_setLock(l, INSERTED) . Lockpin(state = INSERTED, c = STATIC)
+% FIXME combining thing here
+	+ ((state == INSERTED) && (c == CHANGING)) -> r_barState(B2, CLOSED) . r_barState(B3, CLOSED) . a_setLock(l, REMOVED) . Lockpin(state = REMOVED, c = STATIC)
+	 % receive incompatible state: TODO return error
+	+ ((state == REMOVED) && (c == CHANGING)) -> r_brakeState(OFF) . Lockpin(c = STATIC)
+	+ ((state == REMOVED) && (c == CHANGING)) -> sense_bridgeClosed(UNDETECTED) . Lockpin(c = STATIC)
+	+ ((state == INSERTED) && (c == CHANGING)) -> r_barState(B1, OPEN) . Lockpin(c = STATIC)
+	+ ((state == INSERTED) && (c == CHANGING)) -> r_barState(B2, OPEN) . Lockpin(c = STATIC)
+	+ ((state == INSERTED) && (c == CHANGING)) -> r_barState(B3, OPEN) . Lockpin(c = STATIC)
+	+ ((state == INSERTED) && (c == CHANGING)) -> r_barState(B4, OPEN) . Lockpin(c = STATIC)
+	 % no-ops, usually
+	+ (state == INSERTED) -> user_setLockpin(l, INSERTED) . Lockpin(c = STATIC)
+	+ (state == REMOVED) -> user_setLockpin(l, REMOVED) . Lockpin(c = STATIC)
+	 % send state, stop changing
+	+ s_lockState(l, state) . Lockpin(c = STATIC);
+
+
+	MotorBrake(state: State, c: Changing) =
+	 % receive command, set changing state
+	  (state == ON) -> user_setMotorBrake(OFF) . MotorBrake(c = CHANGING)
+	+ (state == OFF) -> user_setMotorBrake(ON) . MotorBrake(c = CHANGING)
+	 % receive confirmation, do stuff
+	+ ((state == ON) && (c == CHANGING)) -> r_lockState(L1, REMOVED) . r_lockState(L2, REMOVED)  . a_setBrake(OFF) . MotorBrake(state = OFF, c = STATIC)
+	+ ((state == OFF) && (c == CHANGING)) -> r_motorState(MOTOROFF) . sense_motorState(MOTOROFF) . a_setBrake(ON) . MotorBrake(state = ON, c = STATIC)
+	 % recieve incompatible state: TODO return error
+	+ ((state == ON) && (c == CHANGING)) -> r_lockState(L1, INSERTED) . MotorBrake(c = STATIC)
+	+ ((state == ON) && (c == CHANGING)) -> r_lockState(L2, INSERTED) . MotorBrake(c = STATIC)
+	+ ((state == OFF) && (c == CHANGING)) -> r_motorState(UP) . MotorBrake(c = STATIC)
+	+ ((state == OFF) && (c == CHANGING)) -> r_motorState(DOWN) . MotorBrake(c = STATIC)
+	 % no-ops, usually
+	+ (state == ON) -> user_setMotorBrake(ON) . MotorBrake(c = STATIC)
+	+ (state == OFF) -> user_setMotorBrake(OFF) . MotorBrake(c = STATIC)
+	 % send state, stop changing
+	+ s_brakeState(state) . MotorBrake(c = STATIC);
+
+
+	Motor(state: motorState, c: Changing, dir: motorState) =
+	 % receive command to start moving, set changing state and direction
+	  (state == MOTOROFF) -> user_setMotor(UP) . Motor(c = CHANGING, dir = UP)
+	+ (state == MOTOROFF) -> user_setMotor(DOWN) . Motor(c = CHANGING, dir = DOWN)
+	 % receive confirmation, do stuff
+	+ (c == CHANGING) -> r_brakeState(OFF) . a_setMotor(dir) . Motor(state = dir, c = STATIC)
+	 % receive incompatible state: TODO return error
+	+ (c == CHANGING) -> r_brakeState(ON) . Motor(c = STATIC)
+	 % motor off
+	+ (state != MOTOROFF) -> user_setMotor(MOTOROFF) . a_setMotor(MOTOROFF) . Motor(state = MOTOROFF, c = STATIC)
+	 % simple direction changes
+	+ (state == UP) -> user_setMotor(DOWN) . a_setMotor(DOWN) . Motor(state = DOWN, c = STATIC)
+	+ (state == DOWN) -> user_setMotor(UP) . a_setMotor(UP) . Motor(state = UP, c = STATIC)
+	 % no-ops, usually
+	+ (state == MOTOROFF) -> user_setMotor(MOTOROFF) . Motor(c = STATIC)
+	+ (state == UP) -> user_setMotor(UP) . Motor(c = STATIC)
+	+ (state == DOWN) -> user_setMotor(DOWN) . Motor(c = STATIC)
+	 % send state, stop changing
+	+ s_motorState(state) . Motor(c = STATIC);
+
+
+
+	%Sem(state: Semaphore) = r_sem(state, LOCK) . r_sem(state, UNLOCK) . Sem();
+
+
+
+init	
+	hide({comm_preState, comm_stopState},
+
+		allow({	user_setPreSign, user_setStopSign, user_setBarrier, user_setLockpin, user_setMotorBrake, user_setMotor,
+			a_setPre, a_setStop, a_setBar, a_setLock, a_setBrake, a_setMotor,
+			comm_preState, comm_stopState, comm_barState, comm_lockState, comm_brakeState, comm_motorState,
+			sense_barrierClosed, sense_barrierOpen, sense_bridgeOpen, sense_bridgeClosed, sense_motorState},
+
+			comm({	r_preState|s_preState -> comm_preState, 
+				r_stopState|s_stopState -> comm_stopState, 
+				r_barState|s_barState -> comm_barState,
+				r_lockState|s_lockState -> comm_lockState,
+				r_brakeState|s_brakeState -> comm_brakeState,
+				r_motorState|s_motorState -> comm_motorState},
+
+				   PreSign(P1, OFF, STATIC) || PreSign(P2, OFF, STATIC) || PreSign(P3, OFF, STATIC) || PreSign(P4, OFF, STATIC)
+				|| StopSign(S1, OFF, STATIC) || StopSign(S2, OFF, STATIC) || StopSign(S3, OFF, STATIC) || StopSign(S4, OFF, STATIC)
+				|| EntryBarrier(B1, OPEN, STATIC) || EntryBarrier(B4, OPEN, STATIC)
+				|| ExitBarrier(B2, OPEN, STATIC) || ExitBarrier(B3, OPEN, STATIC)
+				|| Lockpin(L1, INSERTED, STATIC) || Lockpin(L2, INSERTED, STATIC)
+				|| MotorBrake(ON, STATIC)
+				|| Motor(MOTOROFF, STATIC, MOTOROFF)
+				%|| Sem()
+			)
+		)
+	);
+		

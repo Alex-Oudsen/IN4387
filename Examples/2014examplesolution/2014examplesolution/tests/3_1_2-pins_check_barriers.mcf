@@ -1,0 +1,2 @@
+forall B: BarrierID . [(!a_setBar(B, CLOSED))* . a_setLock(REMOVED)]false
+

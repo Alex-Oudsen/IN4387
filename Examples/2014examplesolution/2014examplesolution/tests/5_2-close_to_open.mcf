@@ -1,0 +1,1 @@
+[true*] forall P: PreSignID. [a_setPre(P, OFF)]<true*.sense_bridgeOpen(DETECTED)>true

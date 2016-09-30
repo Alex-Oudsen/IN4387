@@ -1,0 +1,1 @@
+[true*] forall S: StopSignID . [a_setStop(S, ON) . (!a_setStop(S, OFF))* . a_setPre(matchPreSign(S), OFF)]false

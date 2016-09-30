@@ -1,0 +1,124 @@
+% Complete Bridge LTS Version 1.
+% This file models the bridge's components:
+% P Presigns, S Stopsigns, B Barriers,
+% L Locking Pins
+
+sort 	% Multi-Objects
+	PreSignID 		= struct P12 | P34;
+	StopSignID		= struct S12 | S34;
+	BarrierID 		= struct B1 | B2 | B3 | B4;
+
+	% States
+	State 		= struct ON | OFF;		 	% Pre-signs, Stop-signs, Motor brake 
+	barState 		= struct OPEN | CLOSED;	 	% Barriers
+	motorState 	= struct UP | DOWN | MOTOROFF;	 	% Motor direction	
+	lockState 		= struct INSERTED | REMOVED;	 	% Locking pins
+	sensorState 	= struct DETECTED | UNDETECTED;	% Sensors
+	
+	% Semaphore
+	%Semaphore 	= struct PINBRAKE | BRAKEMOTOR;
+	%semState		= struct LOCK | UNLOCK;
+
+	% Sensors
+	
+
+	% Current action state
+	Changing 		= struct CHANGING | STATIC;
+	
+
+map	% Matching Signs
+	matchStopSign: 	PreSignID -> StopSignID;
+	matchPreSign: 	StopSignID -> PreSignID;
+
+	% Barrier -> StopSign
+	matchStopSign: 	BarrierID -> StopSignID;
+
+	% StopSign -> Barrier
+	matchBarrier: 	StopSignID -> BarrierID;
+
+	% Exit <-> Entry
+	matchExitBarrier: 	BarrierID -> BarrierID;
+	matchEntryBarrier:	BarrierID -> BarrierID;
+
+	% Check Entry/Exit
+	isEntry:		BarrierID -> Bool;
+
+eqn	% PreSign <-> StopSign
+	matchStopSign(P12) = S12;
+	matchStopSign(P34) = S34;
+	matchPreSign(S12) = P12;
+	matchPreSign(S34) = P34;
+
+	% Barrier -> StopSign
+	matchStopSign(B1) = S12;
+	matchStopSign(B2) = S12;
+	matchStopSign(B3) = S34;
+	matchStopSign(B4) = S34;
+
+	% StopSign -> Barrier
+	matchBarrier(S12) = B1;
+	matchBarrier(S34) = B4;
+
+	% Exit <-> Entry
+	matchExitBarrier(B1) = B2;
+	matchExitBarrier(B4) = B3;
+	matchEntryBarrier(B2) = B1;
+	matchEntryBarrier(B3) = B4;
+
+	% Check Entry/Exit
+	isEntry(B1) = true;
+	isEntry(B2) = false;
+	isEntry(B3) = false;
+	isEntry(B4) = true;
+
+act	
+	% External commands
+	user_setPreSign 	: PreSignID 	# State;
+	user_setStopSign 	: StopSignID 	# State;
+	user_setBarrier 	: BarrierID 	# barState;
+	user_setLockpin 	: lockState;
+	user_setMotorBrake 			: State;
+	user_setMotor 			: motorState;
+
+	% Internal stuff
+	% Actions
+	a_setPre 		: PreSignID 	# State;
+	a_setStop 		: StopSignID 	# State;
+	a_setBar		: BarrierID 	# barState;
+	a_setLock 		: lockState;
+	a_setBrake 			: State;
+	a_setMotor 			: motorState;
+
+	% Communication
+	s_preState, 	r_preState, 	comm_preState 	: PreSignID 	# State;
+	s_stopState, 	r_stopState, 	comm_stopState 	: StopSignID 	# State;
+	s_barState,  	r_barState,  	comm_barState 	: BarrierID 	# barState;
+	s_lockState, 	r_lockState, 	comm_lockState 	: lockState;
+	s_brakeState, 	r_brakeState, 	comm_brakeState 			: State;
+	s_motorState, 	r_motorState, 	comm_motorState 			: motorState;
+
+	% Sensors
+	sense_barrierOpen, 	sense_barrierClosed	: BarrierID 	#sensorState;
+	sense_bridgeOpen, 	sense_bridgeClosed 	: sensorState;
+	sense_motorState 			: motorState;
+	
+proc	
+    All =
+      sum P: PreSignID . a_setPre(P, ON) . All()
+    + sum P: PreSignID . a_setPre(P, OFF) . All()
+    + sum S: StopSignID . a_setStop(S, ON) . All()
+    + sum S: StopSignID . a_setStop(S, OFF) . All()
+    + sum B: BarrierID . a_setBar(B, OPEN) . All()
+    + sum B: BarrierID . a_setBar(B, CLOSED) . All()
+    + sum S: lockState . a_setLock(S) . All()
+    + sum S: State . a_setBrake(S) . All()
+    + sum S: motorState . a_setMotor(S) . All()
+    + sum B: BarrierID, S: sensorState . sense_barrierClosed(B,S) . All()
+    + sum B: BarrierID, S: sensorState . sense_barrierOpen(B,S) . All()
+    + sum S: sensorState . sense_bridgeClosed(S) . All()
+    + sum S: sensorState . sense_bridgeOpen(S) . All()
+    + sum S: motorState . sense_motorState(S) . All();
+
+
+init	
+	All();

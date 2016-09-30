@@ -1,0 +1,1 @@
+[true*] forall B: BarrierID . [a_setLock(REMOVED) . (!a_setLock(INSERTED))* . a_setBar(B, OPEN)]false

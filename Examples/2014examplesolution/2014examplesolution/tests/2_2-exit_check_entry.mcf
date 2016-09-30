@@ -1,0 +1,1 @@
+[true*] forall B: BarrierID . val(B == B1 || B == B4) => [a_setBar(B, OPEN) . (!a_setBar(B, CLOSED))* . a_setBar(matchExitBarrier(B), CLOSED)]false

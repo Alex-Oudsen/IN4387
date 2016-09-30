@@ -1,0 +1,1 @@
+[true*] forall S: StopSignID . [a_setStop(S, OFF) . (!a_setStop(S, ON))* . a_setBar(matchBarrier(S), CLOSED)]false

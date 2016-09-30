@@ -1,0 +1,96 @@
+██████╗ ███████╗ █████╗ ██████╗ ███╗   ███╗███████╗
+██╔══██╗██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝
+██████╔╝█████╗  ███████║██║  ██║██╔████╔██║█████╗  
+██╔══██╗██╔══╝  ██╔══██║██║  ██║██║╚██╔╝██║██╔══╝  
+██║  ██║███████╗██║  ██║██████╔╝██║ ╚═╝ ██║███████╗
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝╚══════╝
+
+            mCRL2 model for drawbridge
+             System Validation IN4387
+
+ <anonymised>
+
+Contents
+--------
+1. Introduction
+2. Description of file
+ L 2.1 Models
+ L 2.2 Tests
+ L 2.3 Makefile
+3. How to run
+ L 3.1 Generating models
+ L 3.2 Verification
+
+
+1. Introduction
+----------------
+This ReadMe is meant for the mCRL2 of a drawbridge as presented 
+in the accompanying report. This ReadMe will explain the use of 
+each file and how the model may be constructed and verified using 
+the given makefile.
+
+
+2. Description of files
+-----------------------
+A short description for the file or set of files will be given.
+
+2.1 Models
+There are several model files given in the zip-archive.
+
+Complete.mcrl2
+	This model entails the complete model, but due to too many
+	parallel components it is not possible to generate an lts
+	file on a generic consumer high-end computer. Due to a lot
+	of identical components, Complete_medium.mcrl2 was 
+	constructed. This does mean, however, that this file might
+	not be up-to-date in all respects and might lack some
+	improvements made in files mentioned below.
+
+Complete_medium.mcrl2 - MAIN FILE
+	This is the main model used in all modeling and 
+	verifications. It is based upon the Complete.mcrl2 model,
+	but combines several identical components (P1, P2 = P12, 	
+	etc.) and incorporates some more sensor checks. Some more
+	improvements have been made as explained in the main 
+	report.
+
+Complete_medium_nothing.mcrl2
+	This file is used in the verification. In this file all 
+	communication is disabled so it should fail all functional
+	requirements.
+
+Complete_medium_everything.mcrl2
+	This file is used in the verification. In this file all 
+	actions are allowed at all times so it should fail all 
+	system requirements.
+
+2.2 Tests
+The tests found in the similarly named folder are all individual
+mu-calculus formulae presented in .mcf format. They are named 
+after the requirements in the report. As such, requirement 2.a.ii
+will translate to 2_1_2-{description}.
+
+2.3 Makefile
+This file allows us to use the 'make' program to automate various
+tasks. This way, we can dispense with the mcrl2-gui.
+
+
+3. How to run
+-------------
+3.1 Generating models
+The commands 'view-medium' and 'sim-medium' call ltsview and
+lpsxsim respectively on something generated from 
+Complete_medium.mcrl2.
+
+
+3.2 Verification
+The command 'make tests' will compile Complete_medium.lps and run
+all tests against that file. The everything and nothing files can
+be used by changing their names to Complete_medium.mcrl2 before 
+running 'make tests'.
+
+
+
+
+
+

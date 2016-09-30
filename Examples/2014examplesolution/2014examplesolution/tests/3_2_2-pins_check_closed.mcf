@@ -1,0 +1,1 @@
+[true*] forall MS: motorState . val(MS == UP || MS == DOWN) => [a_setMotor(MS) . (!sense_bridgeClosed(DETECTED))* . a_setLock(INSERTED)]false
