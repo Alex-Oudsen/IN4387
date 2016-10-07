@@ -1,6 +1,6 @@
-sort Lights = struct LIGHTS_ON | LIGHTS_OFF | LIGHTS_CHECK;
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF| BELL_CHECK;
-     Barriers = struct BARRIERS_UP | BARRIERS_DOWN | BARRIERS_CHECK;
+     Barriers = struct BARRIERS_UP | BARRIERS_DOWN;
      TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
 
 act getLightStatus: Lights;
@@ -9,12 +9,10 @@ act getLightStatus: Lights;
     getTrackStatus: TrainTrack;
 
 proc bell(bellStatus: Bell) = 
-     (bellStatus == BELL_OFF) -> getLightStatus(LIGHTS_OFF).bell(BELL_OFF)
-     + (bellStatus == BELL_OFF) -> getLightStatus(LIGHTS_ON).bell(BELL_CHECK)
-     + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_DOWN).bell(BELL_ON)
+     (bellStatus == BELL_OFF) -> getLightStatus(LIGHTS_ON).bell(BELL_CHECK)
      + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(NO_TRAIN).bell(BELL_OFF)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(TRAIN_ARRIVING).bell(BELL_ON)
-     + setBellStatus(bellStatus).bell();
+     + (bellStatus != BELL_CHECK) -> setBellStatus(bellStatus).bell();
 
 init bell(BELL_OFF);

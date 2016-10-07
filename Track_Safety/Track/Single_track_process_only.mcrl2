@@ -1,4 +1,4 @@
-sort SingleTrack = struct NONE | EB | WB | NOGOOD | CHECK;
+sort SingleTrack = struct NONE | EB | WB;
      SafetyCheck = struct EXPECTED | OK;
      Sensor = struct TRIPPED | IDLE;
 
@@ -9,11 +9,8 @@ act tracksensor_e, tracksensor_w: Sensor;
 proc track(trackStatus: SingleTrack) = 
      (trackStatus == NONE) -> tracksensor_e(TRIPPED).track(WB)
      + (trackStatus == NONE) -> tracksensor_w(TRIPPED).track(EB)
-     + (trackStatus == EB) -> tracksensor_e(TRIPPED).track(CHECK)
-     + (trackStatus == WB) -> tracksensor_w(TRIPPED).track(CHECK)
-     + (trackStatus == CHECK) -> getSafetyStatus(OK).track(NONE)
-     + (trackStatus == CHECK) -> getSafetyStatus(EXPECTED).track(NOGOOD)
-     + (trackStatus == NOGOOD) -> getSafetyStatus(OK).track(NONE)
+     + (trackStatus == EB) -> tracksensor_e(TRIPPED).track(NONE)
+     + (trackStatus == WB) -> tracksensor_w(TRIPPED).track(NONE)
      + setTrackStatus(trackStatus).track();
 
 init track(NONE);

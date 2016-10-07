@@ -4,9 +4,23 @@ sort TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
      Sensor = struct TRIPPED | IDLE;
 
 act setTrackStatus: TrainTrack;
-    tracksensor1m, tracksensor2m: Sensor;
-    getTrack1Status, getTrack2Status: SingleTrack;
-    setSafetyStatus1, setSafetyStatus2: SafetyCheck;
+    tracksensor1e, tracksensor1w, tracksensor2e, tracksensor2w, tracksensor1m, tracksensor2m: Sensor;
+    setTrack1Status, getTrack1Status, setTrack2Status, getTrack2Status, comm_track1Status, comm_track2Status: SingleTrack;
+    setSafetyStatus1, getSafetyStatus1, setSafetyStatus2, getSafetyStatus2, comm_safetyStatus1, comm_safetyStatus2: SafetyCheck;
+
+proc track1(track1Status: SingleTrack) = 
+     (track1Status == NONE) -> tracksensor1e(TRIPPED).track1(WB)
+     + (track1Status == NONE) -> tracksensor1w(TRIPPED).track1(EB)
+     + (track1Status == EB) -> tracksensor1e(TRIPPED).track1(NONE)
+     + (track1Status == WB) -> tracksensor1w(TRIPPED).track1(NONE)
+     + setTrack1Status(track1Status).track1();
+
+proc track2(track2Status: SingleTrack) = 
+     (track2Status == NONE) -> tracksensor2e(TRIPPED).track2(WB)
+     + (track2Status == NONE) -> tracksensor2w(TRIPPED).track2(EB)
+     + (track2Status == EB) -> tracksensor2e(TRIPPED).track2(NONE)
+     + (track2Status == WB) -> tracksensor2w(TRIPPED).track2(NONE)
+     + setTrack2Status(track2Status).track2();
 
 proc safety(safetyStatus1: SafetyCheck, safetyStatus2: SafetyCheck, trackStatus: TrainTrack) = 
      (trackStatus == NO_TRAIN) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
@@ -31,4 +45,18 @@ proc safety(safetyStatus1: SafetyCheck, safetyStatus2: SafetyCheck, trackStatus:
      + setSafetyStatus2(safetyStatus2).safety()
      + setTrackStatus(trackStatus).safety();
 
-init safety(OK, OK, NO_TRAIN);
+init 
+     hide({comm_track1Status, comm_track2Status, comm_safetyStatus1, comm_safetyStatus2},
+          allow({tracksensor1e, tracksensor1w, tracksensor2e, tracksensor2w,
+                 tracksensor1m, tracksensor2m, comm_track1Status, comm_track2Status,
+                 comm_safetyStatus1, comm_safetyStatus2},
+               comm({setTrack1Status|getTrack1Status -> comm_track1Status,
+                     setTrack2Status|getTrack2Status -> comm_track2Status,
+                     setSafetyStatus1|getSafetyStatus1 -> comm_safetyStatus1,
+                     setSafetyStatus2|getSafetyStatus2 -> comm_safetyStatus2},
+                        safety(OK, OK, NO_TRAIN)
+                        ||track1(NONE)
+                        ||track2(NONE)
+               )
+          )
+     );

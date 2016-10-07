@@ -1,8 +1,8 @@
-sort Lights = struct LIGHTS_ON | LIGHTS_OFF | LIGHTS_CHECK;
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
-     Barriers = struct BARRIERS_UP | BARRIERS_DOWN | BARRIERS_CHECK;
+     Barriers = struct BARRIERS_UP | BARRIERS_DOWN;
      TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
-     SingleTrack = struct NONE | EB | WB | NOGOOD | CHECK;
+     SingleTrack = struct NONE | EB | WB;
      SafetyCheck = struct EXPECTED | OK;
      Sensor = struct TRIPPED | IDLE;
 
@@ -16,9 +16,7 @@ act setLightStatus, getLightStatus, comm_lightStatus: Lights;
 
 proc lights(lightStatus: Lights) = 
      (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).lights(LIGHTS_CHECK)
-     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF)
+     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).(getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON) + getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF))
      + setLightStatus(lightStatus).lights();
 
 proc bell(bellStatus: Bell) = 
@@ -26,67 +24,49 @@ proc bell(bellStatus: Bell) =
      + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(NO_TRAIN).bell(BELL_OFF)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(TRAIN_ARRIVING).bell(BELL_ON)
-     + setBellStatus(bellStatus).bell();
+     + (bellStatus != BELL_CHECK) -> setBellStatus(bellStatus).bell();
 
 proc barriers(barrierStatus: Barriers) = 
-     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).barriers(BARRIERS_CHECK)
-     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
-     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN)
+     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).(getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP) + getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN))
      + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
      + setBarrierStatus(barrierStatus).barriers();
-
-proc safety(safetyStatus1: SafetyCheck, safetyStatus2: SafetyCheck, trackStatus: TrainTrack, checking: Bool) = 
-     (trackStatus == NO_TRAIN) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (trackStatus == NO_TRAIN) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (trackStatus == NO_TRAIN) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (trackStatus == NO_TRAIN) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (trackStatus == NO_TRAIN) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (trackStatus == NO_TRAIN) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
-     + (safetyStatus1 == EXPECTED) -> tracksensor1m(TRIPPED).safety(safetyStatus1 = OK)
-     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
-     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
-     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED)
-     + (safetyStatus2 == EXPECTED) -> tracksensor2m(TRIPPED).safety(safetyStatus2 = OK)
-     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
-     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
-     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(NONE).safety(checking = true)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
-     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED)
-     + (checking == true) -> getTrack2Status(NONE).safety(trackStatus = NO_TRAIN, checking = false)
-     + (checking == true) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, checking = false)
-     + (checking == true) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED, checking = false)
-     + (checking == true) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED, checking = false)
-     + (checking == true) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED, checking = false)
-     + (checking == true) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED, checking = false)
-     + (checking == true) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED, checking = false)
-     + setSafetyStatus1(safetyStatus1).safety()
-     + setSafetyStatus2(safetyStatus2).safety()
-     + setTrackStatus(trackStatus).safety();
 
 proc track1(track1Status: SingleTrack) = 
      (track1Status == NONE) -> tracksensor1e(TRIPPED).track1(WB)
      + (track1Status == NONE) -> tracksensor1w(TRIPPED).track1(EB)
-     + (track1Status == EB) -> tracksensor1e(TRIPPED).track1(CHECK)
-     + (track1Status == WB) -> tracksensor1w(TRIPPED).track1(CHECK)
-     + (track1Status == CHECK) -> getSafetyStatus1(OK).track1(NONE)
-     + (track1Status == CHECK) -> getSafetyStatus1(EXPECTED).track1(NOGOOD)
-     + (track1Status == NOGOOD) -> getSafetyStatus1(OK).track1(NONE)
+     + (track1Status == EB) -> tracksensor1e(TRIPPED).track1(NONE)
+     + (track1Status == WB) -> tracksensor1w(TRIPPED).track1(NONE)
      + setTrack1Status(track1Status).track1();
 
 proc track2(track2Status: SingleTrack) = 
      (track2Status == NONE) -> tracksensor2e(TRIPPED).track2(WB)
      + (track2Status == NONE) -> tracksensor2w(TRIPPED).track2(EB)
-     + (track2Status == EB) -> tracksensor2e(TRIPPED).track2(CHECK)
-     + (track2Status == WB) -> tracksensor2w(TRIPPED).track2(CHECK)
-     + (track2Status == CHECK) -> getSafetyStatus2(OK).track2(NONE)
-     + (track2Status == CHECK) -> getSafetyStatus2(EXPECTED).track2(NOGOOD)
-     + (track2Status == NOGOOD) -> getSafetyStatus2(OK).track2(NONE)
+     + (track2Status == EB) -> tracksensor2e(TRIPPED).track2(NONE)
+     + (track2Status == WB) -> tracksensor2w(TRIPPED).track2(NONE)
      + setTrack2Status(track2Status).track2();
+
+proc safety(safetyStatus1: SafetyCheck, safetyStatus2: SafetyCheck, trackStatus: TrainTrack) = 
+     (trackStatus == NO_TRAIN) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (safetyStatus1 == EXPECTED) -> tracksensor1m(TRIPPED).safety(safetyStatus1 = OK)
+     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
+     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
+     + (safetyStatus2 == EXPECTED) -> tracksensor2m(TRIPPED).safety(safetyStatus2 = OK)
+     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
+     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK) -> getTrack1Status(NONE)
+       .(getTrack2Status(NONE).safety(trackStatus = NO_TRAIN) + getTrack1Status(EB).safety(safetyStatus1 = EXPECTED) +
+       getTrack1Status(WB).safety(safetyStatus1 = EXPECTED) + getTrack2Status(EB).safety(safetyStatus2 = EXPECTED) + 
+       getTrack2Status(WB).safety(safetyStatus2 = EXPECTED))
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
+     + setSafetyStatus1(safetyStatus1).safety()
+     + setSafetyStatus2(safetyStatus2).safety()
+     + setTrackStatus(trackStatus).safety();
 
 init 
      hide({comm_lightStatus, comm_bellStatus, comm_barrierStatus, comm_trackStatus,
@@ -106,9 +86,9 @@ init
                         lights(LIGHTS_OFF)
                         ||bell(BELL_OFF)
                         ||barriers(BARRIERS_UP)
-                        ||safety(OK, OK, NO_TRAIN, false)
                         ||track1(NONE)
                         ||track2(NONE)
+                        ||safety(OK, OK, NO_TRAIN)
                )
           )
      );

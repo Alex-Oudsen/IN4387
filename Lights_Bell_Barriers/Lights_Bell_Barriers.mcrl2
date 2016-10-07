@@ -1,6 +1,6 @@
-sort Lights = struct LIGHTS_ON | LIGHTS_OFF | LIGHTS_CHECK;
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
-     Barriers = struct BARRIERS_UP | BARRIERS_DOWN | BARRIERS_CHECK;
+     Barriers = struct BARRIERS_UP | BARRIERS_DOWN;
      TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
 
 act setLightStatus, getLightStatus, comm_lightStatus: Lights;
@@ -10,9 +10,7 @@ act setLightStatus, getLightStatus, comm_lightStatus: Lights;
 
 proc lights(lightStatus: Lights) = 
      (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).lights(LIGHTS_CHECK)
-     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF)
+     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).(getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON) + getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF))
      + setLightStatus(lightStatus).lights();
 
 proc bell(bellStatus: Bell) = 
@@ -20,12 +18,10 @@ proc bell(bellStatus: Bell) =
      + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(NO_TRAIN).bell(BELL_OFF)
      + (bellStatus == BELL_CHECK) -> getTrackStatus(TRAIN_ARRIVING).bell(BELL_ON)
-     + setBellStatus(bellStatus).bell();
+     + (bellStatus != BELL_CHECK) -> setBellStatus(bellStatus).bell();
 
 proc barriers(barrierStatus: Barriers) = 
-     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).barriers(BARRIERS_CHECK)
-     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
-     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN)
+     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).(getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP) + getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN))
      + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
      + setBarrierStatus(barrierStatus).barriers();
 
