@@ -1,0 +1,18 @@
+sort Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
+     Barriers = struct BARRIERS_UP | BARRIERS_DOWN | BARRIERS_CHECK;
+     TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+
+act getBellStatus: Bell;
+    setBarrierStatus: Barriers;
+    getTrackStatus: TrainTrack;
+
+proc barriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_OFF).barriers(BARRIERS_UP)
+     + (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).barriers(BARRIERS_CHECK)
+     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
+     + (barrierStatus == BARRIERS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN)
+     + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN)
+     + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
+     + setBarrierStatus(barrierStatus).barriers();
+
+init barriers(BARRIERS_UP);

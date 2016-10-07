@@ -1,0 +1,18 @@
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF | LIGHTS_CHECK;
+     Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
+     TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+
+act setLightStatus: Lights;
+    getBellStatus: Bell;
+    getTrackStatus: TrainTrack;
+
+proc lights(lightStatus: Lights) = 
+     (lightStatus == LIGHTS_OFF) -> getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF)
+     + (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_ON).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).lights(LIGHTS_CHECK)
+     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_CHECK) -> getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF)
+     + setLightStatus(lightStatus).lights();
+
+init lights(LIGHTS_OFF);
