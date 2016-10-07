@@ -1,0 +1,44 @@
+sort TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+     SingleTrack = struct NONE | EB | WB | NOGOOD | CHECK;
+     SafetyCheck = struct EXPECTED | OK;
+     Sensor = struct TRIPPED | IDLE;
+
+act setTrackStatus: TrainTrack;
+    tracksensor1m, tracksensor2m: Sensor;
+    getTrack1Status, getTrack2Status: SingleTrack;
+    setSafetyStatus1, setSafetyStatus2: SafetyCheck;
+
+proc safety(safetyStatus1: SafetyCheck, safetyStatus2: SafetyCheck, trackStatus: TrainTrack, checking: Bool) = 
+     (trackStatus == NO_TRAIN) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (trackStatus == NO_TRAIN) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED, trackStatus = TRAIN_ARRIVING)
+     + (safetyStatus1 == EXPECTED) -> tracksensor1m(TRIPPED).safety(safetyStatus1 = OK)
+     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
+     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
+     + (safetyStatus1 == EXPECTED && safetyStatus2 == OK) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED)
+     + (safetyStatus2 == EXPECTED) -> tracksensor2m(TRIPPED).safety(safetyStatus2 = OK)
+     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
+     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
+     + (safetyStatus2 == EXPECTED && safetyStatus1 == OK) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(NONE).safety(checking = true)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED)
+     + (trackStatus == TRAIN_ARRIVING && safetyStatus1 == OK && safetyStatus2 == OK && checking == false) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED)
+     + (checking == true) -> getTrack2Status(NONE).safety(trackStatus = NO_TRAIN, checking = false)
+     + (checking == true) -> getTrack1Status(EB).safety(safetyStatus1 = EXPECTED, checking = false)
+     + (checking == true) -> getTrack1Status(WB).safety(safetyStatus1 = EXPECTED, checking = false)
+     + (checking == true) -> getTrack1Status(NOGOOD).safety(safetyStatus1 = EXPECTED, checking = false)
+     + (checking == true) -> getTrack2Status(EB).safety(safetyStatus2 = EXPECTED, checking = false)
+     + (checking == true) -> getTrack2Status(WB).safety(safetyStatus2 = EXPECTED, checking = false)
+     + (checking == true) -> getTrack2Status(NOGOOD).safety(safetyStatus2 = EXPECTED, checking = false)
+     + setSafetyStatus1(safetyStatus1).safety()
+     + setSafetyStatus2(safetyStatus2).safety()
+     + setTrackStatus(trackStatus).safety();
+
+init safety(OK, OK, NO_TRAIN, false);
