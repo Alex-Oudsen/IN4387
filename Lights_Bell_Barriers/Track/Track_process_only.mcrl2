@@ -1,0 +1,26 @@
+sort SafetyCheck = struct EXPECTED | OK;
+     SingleTrack = struct NONE | EB | WB | NOGOOD;
+     Sensor = struct TRIPPED | IDLE;
+
+act setTrack1Status, getTrack1Status, setTrack2Status, getTrack2Status: SingleTrack;
+    s1e, s1w, s2e, s2w, s1m, s2m: Sensor;
+    getSafetyStatus1, getSafetyStatus2: SafetyCheck;
+
+proc track1(track1Status: SingleTrack) =
+      (track1Status == NONE) -> s1e(IDLE) . track1()
+    + (track1Status == NONE) -> s1w(IDLE) . track1()
+    + (track1Status == NONE) -> s1e(TRIPPED) . track1(WB)
+    + (track1Status == NONE) -> s1w(TRIPPED) . track1(EB)
+
+    + (track1Status == WB) -> s1e(IDLE) . track1()
+    + (track1Status == WB) -> s1w(IDLE) . track1()
+    + (track1Status == WB) -> s1e(TRIPPED) . track1()
+    + (track1Status == WB) -> s1w(TRIPPED) . ( getSafetyStatus1(OK) .track1(NONE) + getSafetyStatus1(EXPECTED) . track1(NOGOOD) ) 
+
+    + (track1Status == EB) -> s1w(IDLE) . track1()
+    + (track1Status == EB) -> s1e(IDLE) . track1()
+    + (track1Status == EB) -> s1w(TRIPPED) . track1()
+    + (track1Status == EB) -> s1e(TRIPPED) . ( getSafetyStatus1(OK) . track1(NONE) + getSafetyStatus1(EXPECTED) . track1(NOGOOD) ) 
+    ;
+
+init track1(NONE);
