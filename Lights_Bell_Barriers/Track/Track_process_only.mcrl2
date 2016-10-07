@@ -23,4 +23,21 @@ proc track1(track1Status: SingleTrack) =
     + (track1Status == EB) -> s1e(TRIPPED) . ( getSafetyStatus1(OK) . track1(NONE) + getSafetyStatus1(EXPECTED) . track1(NOGOOD) ) 
     ;
 
-init track1(NONE);
+proc track2(track2Status: SingleTrack) =
+      (track2Status == NONE) -> s2e(IDLE) . track2()
+    + (track2Status == NONE) -> s2w(IDLE) . track2()
+    + (track2Status == NONE) -> s2e(TRIPPED) . track2(WB)
+    + (track2Status == NONE) -> s2w(TRIPPED) . track2(EB)
+
+    + (track2Status == WB) -> s2e(IDLE) . track2()
+    + (track2Status == WB) -> s2w(IDLE) . track2()
+    + (track2Status == WB) -> s2e(TRIPPED) . track2()
+    + (track2Status == WB) -> s2w(TRIPPED) . ( getSafetyStatus1(OK) .track2(NONE) + getSafetyStatus1(EXPECTED) . track2(NOGOOD) ) 
+
+    + (track2Status == EB) -> s2w(IDLE) . track2()
+    + (track2Status == EB) -> s2e(IDLE) . track2()
+    + (track2Status == EB) -> s2w(TRIPPED) . track2()
+    + (track2Status == EB) -> s2e(TRIPPED) . ( getSafetyStatus1(OK) . track2(NONE) + getSafetyStatus1(EXPECTED) . track2(NOGOOD) ) 
+    ;
+
+init track1(NONE)||track2(NONE);
