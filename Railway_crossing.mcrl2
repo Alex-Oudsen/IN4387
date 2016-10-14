@@ -1,71 +1,73 @@
 sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
      Barriers = struct BARRIERS_UP | BARRIERS_DOWN;
-     TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+     TrainTrack = struct TRAIN | NO_TRAIN;
      SingleTrack = struct NONE | EB | WB;
      Sensor = struct TRIPPED | IDLE;
 
-act setLightStatus, getLightStatus, comm_lightStatus: Lights;
-    setBellStatus, getBellStatus, comm_bellStatus: Bell;
-    setBarrierStatus, getBarrierStatus, comm_barrierStatus: Barriers;
-    setTrackStatus, getTrackStatus, comm_trackStatus: TrainTrack;
-    tracksensor1e, tracksensor1w, tracksensor2e, tracksensor2w: Sensor;
-    setTrack1Status, getTrack1Status, setTrack2Status, getTrack2Status, comm_track1Status, comm_track2Status: SingleTrack;
+act setLights, sendLightStatus, recvLightStatus, comm_lightStatus: Lights;
+    setBell, sendBellStatus, recvBellStatus, comm_bellStatus: Bell;
+    setBarriers, sendBarrierStatus, recvBarrierStatus, comm_barrierStatus: Barriers;
+    sendTrackStatus, recvTrackStatus, comm_trackStatus: TrainTrack;
+    tracksensor1w, tracksensor1m, tracksensor1e, tracksensor2w, tracksensor2m, tracksensor2e: Sensor;
+    sendTrack1Status, recvTrack1Status, sendTrack2Status, recvTrack2Status, comm_track1Status, comm_track2Status: SingleTrack;
 
 proc lights(lightStatus: Lights) = 
-     (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).(getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON) + getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF))
-     + setLightStatus(lightStatus).lights();
+     (lightStatus == LIGHTS_OFF) -> recvTrackStatus(TRAIN).setLights(LIGHTS_ON).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_ON) -> recvBellStatus(BELL_OFF).(recvTrackStatus(TRAIN)
+     .lights(LIGHTS_ON) + recvTrackStatus(NO_TRAIN).setLights(LIGHTS_OFF).lights(LIGHTS_OFF))
+     + sendLightStatus(lightStatus).lights();
 
 proc bell(bellStatus: Bell) = 
-     (bellStatus == BELL_OFF) -> getLightStatus(LIGHTS_ON).bell(BELL_CHECK)
-     + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
-     + (bellStatus == BELL_CHECK) -> getTrackStatus(NO_TRAIN).bell(BELL_OFF)
-     + (bellStatus == BELL_CHECK) -> getTrackStatus(TRAIN_ARRIVING).bell(BELL_ON)
-     + (bellStatus != BELL_CHECK) -> setBellStatus(bellStatus).bell();
+     (bellStatus == BELL_OFF) -> recvLightStatus(LIGHTS_ON).bell(BELL_CHECK)
+     + (bellStatus == BELL_ON) -> recvBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
+     + (bellStatus == BELL_CHECK) -> recvTrackStatus(NO_TRAIN).setBell(BELL_OFF).bell(BELL_OFF)
+     + (bellStatus == BELL_CHECK) -> recvTrackStatus(TRAIN).setBell(BELL_ON).bell(BELL_ON)
+     + (bellStatus != BELL_CHECK) -> sendBellStatus(bellStatus).bell();
 
 proc barriers(barrierStatus: Barriers) = 
-     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).(getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP) + getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN))
-     + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
-     + setBarrierStatus(barrierStatus).barriers();
+     (barrierStatus == BARRIERS_UP) -> recvBellStatus(BELL_ON).(recvTrackStatus(NO_TRAIN)
+     .barriers(BARRIERS_UP) + recvTrackStatus(TRAIN).setBarriers(BARRIERS_DOWN).barriers(BARRIERS_DOWN))
+     + (barrierStatus == BARRIERS_DOWN) -> recvTrackStatus(NO_TRAIN).setBarriers(BARRIERS_UP).barriers(BARRIERS_UP)
+     + sendBarrierStatus(barrierStatus).barriers();
 
 proc track1(track1Status: SingleTrack) = 
      (track1Status == NONE) -> tracksensor1e(TRIPPED).track1(WB)
      + (track1Status == NONE) -> tracksensor1w(TRIPPED).track1(EB)
-     + (track1Status == EB) -> tracksensor1e(TRIPPED).track1(NONE)
-     + (track1Status == WB) -> tracksensor1w(TRIPPED).track1(NONE)
-     + setTrack1Status(track1Status).track1();
+     + (track1Status == EB) -> tracksensor1m(TRIPPED).tracksensor1e(TRIPPED).track1(NONE)
+     + (track1Status == WB) -> tracksensor1m(TRIPPED).tracksensor1w(TRIPPED).track1(NONE)
+     + sendTrack1Status(track1Status).track1();
 
 proc track2(track2Status: SingleTrack) = 
      (track2Status == NONE) -> tracksensor2e(TRIPPED).track2(WB)
      + (track2Status == NONE) -> tracksensor2w(TRIPPED).track2(EB)
-     + (track2Status == EB) -> tracksensor2e(TRIPPED).track2(NONE)
-     + (track2Status == WB) -> tracksensor2w(TRIPPED).track2(NONE)
-     + setTrack2Status(track2Status).track2();
+     + (track2Status == EB) -> tracksensor2m(TRIPPED).tracksensor2e(TRIPPED).track2(NONE)
+     + (track2Status == WB) -> tracksensor2m(TRIPPED).tracksensor2w(TRIPPED).track2(NONE)
+     + sendTrack2Status(track2Status).track2();
 
 proc safety(trackStatus: TrainTrack, arriving_on_1: Bool, arriving_on_2: Bool) = 
-     (trackStatus == NO_TRAIN) -> ((getTrack1Status(EB) + getTrack1Status(WB)).safety(trackStatus = TRAIN_ARRIVING,
-     arriving_on_1 = true) + (getTrack2Status(EB) + getTrack2Status(WB)).safety(trackStatus = TRAIN_ARRIVING, arriving_on_2 = true))
-     + (arriving_on_1 == true && arriving_on_2 == false) -> ((getTrack2Status(EB) + getTrack2Status(WB)).safety(arriving_on_2 = true) +
-     getTrack1Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_1 = false))
-     + (arriving_on_1 == false && arriving_on_2 == true) -> ((getTrack1Status(EB) + getTrack1Status(WB)).safety(arriving_on_1 = true) +
-     getTrack2Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_2 = false))
-     + (arriving_on_1 == true && arriving_on_2 == true) -> getTrack1Status(NONE).safety(arriving_on_1 = false)
-     + (arriving_on_1 == true && arriving_on_2 == true) -> getTrack2Status(NONE).safety(arriving_on_2 = false)
-     + setTrackStatus(trackStatus).safety();
+     (trackStatus == NO_TRAIN) -> ((recvTrack1Status(EB) + recvTrack1Status(WB)).safety(trackStatus = TRAIN,
+     arriving_on_1 = true) + (recvTrack2Status(EB) + recvTrack2Status(WB)).safety(trackStatus = TRAIN, arriving_on_2 = true))
+     + (arriving_on_1 == true && arriving_on_2 == false) -> ((recvTrack2Status(EB) + recvTrack2Status(WB)).safety(arriving_on_2 = true) +
+     recvTrack1Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_1 = false))
+     + (arriving_on_1 == false && arriving_on_2 == true) -> ((recvTrack1Status(EB) + recvTrack1Status(WB)).safety(arriving_on_1 = true) +
+     recvTrack2Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_2 = false))
+     + (arriving_on_1 == true && arriving_on_2 == true) -> recvTrack1Status(NONE).safety(arriving_on_1 = false)
+     + (arriving_on_1 == true && arriving_on_2 == true) -> recvTrack2Status(NONE).safety(arriving_on_2 = false)
+     + sendTrackStatus(trackStatus).safety();
 
 init 
      hide({comm_lightStatus, comm_bellStatus, comm_barrierStatus, comm_trackStatus,
            comm_track1Status, comm_track2Status},
           allow({comm_lightStatus, comm_bellStatus, comm_barrierStatus, comm_trackStatus,
-                 tracksensor1e, tracksensor1w, tracksensor2e, tracksensor2w,
-                 comm_track1Status, comm_track2Status},
-               comm({setLightStatus|getLightStatus -> comm_lightStatus,
-                     setBellStatus|getBellStatus -> comm_bellStatus,
-                     setBarrierStatus|getBarrierStatus -> comm_barrierStatus,
-                     setTrackStatus|getTrackStatus -> comm_trackStatus,
-                     setTrack1Status|getTrack1Status -> comm_track1Status,
-                     setTrack2Status|getTrack2Status -> comm_track2Status},
+                 tracksensor1w, tracksensor1m, tracksensor1e, tracksensor2w, tracksensor2m, tracksensor2e,
+                 comm_track1Status, comm_track2Status, setLights, setBell, setBarriers},
+               comm({sendLightStatus|recvLightStatus -> comm_lightStatus,
+                     sendBellStatus|recvBellStatus -> comm_bellStatus,
+                     sendBarrierStatus|recvBarrierStatus -> comm_barrierStatus,
+                     sendTrackStatus|recvTrackStatus -> comm_trackStatus,
+                     sendTrack1Status|recvTrack1Status -> comm_track1Status,
+                     sendTrack2Status|recvTrack2Status -> comm_track2Status},
                         lights(LIGHTS_OFF)
                         ||bell(BELL_OFF)
                         ||barriers(BARRIERS_UP)

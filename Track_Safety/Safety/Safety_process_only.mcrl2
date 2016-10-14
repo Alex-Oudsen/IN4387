@@ -1,19 +1,18 @@
-sort TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+sort TrainTrack = struct TRAIN | NO_TRAIN;
      SingleTrack = struct NONE | EB | WB;
-     Sensor = struct TRIPPED | IDLE;
 
-act setTrackStatus: TrainTrack;
-    getTrack1Status, getTrack2Status: SingleTrack;
+act sendTrackStatus: TrainTrack;
+    recvTrack1Status, recvTrack2Status: SingleTrack;
 
 proc safety(trackStatus: TrainTrack, arriving_on_1: Bool, arriving_on_2: Bool) = 
-     (trackStatus == NO_TRAIN) -> ((getTrack1Status(EB) + getTrack1Status(WB)).safety(trackStatus = TRAIN_ARRIVING,
-     arriving_on_1 = true) + (getTrack2Status(EB) + getTrack2Status(WB)).safety(trackStatus = TRAIN_ARRIVING, arriving_on_2 = true))
-     + (arriving_on_1 == true && arriving_on_2 == false) -> ((getTrack2Status(EB) + getTrack2Status(WB)).safety(arriving_on_2 = true) +
-     getTrack1Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_1 = false))
-     + (arriving_on_1 == false && arriving_on_2 == true) -> ((getTrack1Status(EB) + getTrack1Status(WB)).safety(arriving_on_1 = true) +
-     getTrack2Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_2 = false))
-     + (arriving_on_1 == true && arriving_on_2 == true) -> getTrack1Status(NONE).safety(arriving_on_1 = false)
-     + (arriving_on_1 == true && arriving_on_2 == true) -> getTrack2Status(NONE).safety(arriving_on_2 = false)
-     + setTrackStatus(trackStatus).safety();
+     (trackStatus == NO_TRAIN) -> ((recvTrack1Status(EB) + recvTrack1Status(WB)).safety(trackStatus = TRAIN,
+     arriving_on_1 = true) + (recvTrack2Status(EB) + recvTrack2Status(WB)).safety(trackStatus = TRAIN, arriving_on_2 = true))
+     + (arriving_on_1 == true && arriving_on_2 == false) -> ((recvTrack2Status(EB) + recvTrack2Status(WB)).safety(arriving_on_2 = true) +
+     recvTrack1Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_1 = false))
+     + (arriving_on_1 == false && arriving_on_2 == true) -> ((recvTrack1Status(EB) + recvTrack1Status(WB)).safety(arriving_on_1 = true) +
+     recvTrack2Status(NONE).safety(trackStatus = NO_TRAIN, arriving_on_2 = false))
+     + (arriving_on_1 == true && arriving_on_2 == true) -> recvTrack1Status(NONE).safety(arriving_on_1 = false)
+     + (arriving_on_1 == true && arriving_on_2 == true) -> recvTrack2Status(NONE).safety(arriving_on_2 = false)
+     + sendTrackStatus(trackStatus).safety();
 
 init safety(NO_TRAIN, false, false);

@@ -1,14 +1,15 @@
 sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF;
-     TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+     TrainTrack = struct TRAIN | NO_TRAIN;
 
-act setLightStatus: Lights;
-    getBellStatus: Bell;
-    getTrackStatus: TrainTrack;
+act setLights, sendLightStatus: Lights;
+    recvBellStatus: Bell;
+    recvTrackStatus: TrainTrack;
 
 proc lights(lightStatus: Lights) = 
-     (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).(getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON) + getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF))
-     + setLightStatus(lightStatus).lights();
+     (lightStatus == LIGHTS_OFF) -> recvTrackStatus(TRAIN).setLights(LIGHTS_ON).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_ON) -> recvBellStatus(BELL_OFF).(recvTrackStatus(TRAIN).
+       lights(LIGHTS_ON) + recvTrackStatus(NO_TRAIN).setLights(LIGHTS_OFF).lights(LIGHTS_OFF))
+     + sendLightStatus(lightStatus).lights();
 
 init lights(LIGHTS_OFF);

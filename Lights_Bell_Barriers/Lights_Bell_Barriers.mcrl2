@@ -1,36 +1,39 @@
 sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Bell = struct BELL_ON | BELL_OFF | BELL_CHECK;
      Barriers = struct BARRIERS_UP | BARRIERS_DOWN;
-     TrainTrack = struct TRAIN_ARRIVING | NO_TRAIN;
+     TrainTrack = struct TRAIN | NO_TRAIN;
 
-act setLightStatus, getLightStatus, comm_lightStatus: Lights;
-    setBellStatus, getBellStatus, comm_bellStatus: Bell;
-    setBarrierStatus, getBarrierStatus, comm_barrierStatus: Barriers;
-    getTrackStatus: TrainTrack;
+act setLights, sendLightStatus, recvLightStatus, comm_lightStatus: Lights;
+    setBell, sendBellStatus, recvBellStatus, comm_bellStatus: Bell;
+    setBarriers, sendBarrierStatus, recvBarrierStatus, comm_barrierStatus: Barriers;
+    recvTrackStatus: TrainTrack;
 
 proc lights(lightStatus: Lights) = 
-     (lightStatus == LIGHTS_OFF) -> getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON)
-     + (lightStatus == LIGHTS_ON) -> getBellStatus(BELL_OFF).(getTrackStatus(TRAIN_ARRIVING).lights(LIGHTS_ON) + getTrackStatus(NO_TRAIN).lights(LIGHTS_OFF))
-     + setLightStatus(lightStatus).lights();
+     (lightStatus == LIGHTS_OFF) -> recvTrackStatus(TRAIN).setLights(LIGHTS_ON).lights(LIGHTS_ON)
+     + (lightStatus == LIGHTS_ON) -> recvBellStatus(BELL_OFF).(recvTrackStatus(TRAIN)
+     .lights(LIGHTS_ON) + recvTrackStatus(NO_TRAIN).setLights(LIGHTS_OFF).lights(LIGHTS_OFF))
+     + sendLightStatus(lightStatus).lights();
 
 proc bell(bellStatus: Bell) = 
-     (bellStatus == BELL_OFF) -> getLightStatus(LIGHTS_ON).bell(BELL_CHECK)
-     + (bellStatus == BELL_ON) -> getBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
-     + (bellStatus == BELL_CHECK) -> getTrackStatus(NO_TRAIN).bell(BELL_OFF)
-     + (bellStatus == BELL_CHECK) -> getTrackStatus(TRAIN_ARRIVING).bell(BELL_ON)
-     + (bellStatus != BELL_CHECK) -> setBellStatus(bellStatus).bell();
+     (bellStatus == BELL_OFF) -> recvLightStatus(LIGHTS_ON).bell(BELL_CHECK)
+     + (bellStatus == BELL_ON) -> recvBarrierStatus(BARRIERS_UP).bell(BELL_CHECK)
+     + (bellStatus == BELL_CHECK) -> recvTrackStatus(NO_TRAIN).setBell(BELL_OFF).bell(BELL_OFF)
+     + (bellStatus == BELL_CHECK) -> recvTrackStatus(TRAIN).setBell(BELL_ON).bell(BELL_ON)
+     + (bellStatus != BELL_CHECK) -> sendBellStatus(bellStatus).bell();
 
 proc barriers(barrierStatus: Barriers) = 
-     (barrierStatus == BARRIERS_UP) -> getBellStatus(BELL_ON).(getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP) + getTrackStatus(TRAIN_ARRIVING).barriers(BARRIERS_DOWN))
-     + (barrierStatus == BARRIERS_DOWN) -> getTrackStatus(NO_TRAIN).barriers(BARRIERS_UP)
-     + setBarrierStatus(barrierStatus).barriers();
+     (barrierStatus == BARRIERS_UP) -> recvBellStatus(BELL_ON).(recvTrackStatus(NO_TRAIN)
+     .barriers(BARRIERS_UP) + recvTrackStatus(TRAIN).setBarriers(BARRIERS_DOWN).barriers(BARRIERS_DOWN))
+     + (barrierStatus == BARRIERS_DOWN) -> recvTrackStatus(NO_TRAIN).setBarriers(BARRIERS_UP).barriers(BARRIERS_UP)
+     + sendBarrierStatus(barrierStatus).barriers();
 
 init 
      hide({comm_lightStatus, comm_bellStatus, comm_barrierStatus},
-          allow({comm_lightStatus, comm_bellStatus, comm_barrierStatus, getTrackStatus},
-               comm({setLightStatus|getLightStatus -> comm_lightStatus,
-                     setBellStatus|getBellStatus -> comm_bellStatus,
-                     setBarrierStatus|getBarrierStatus -> comm_barrierStatus},
+          allow({comm_lightStatus, comm_bellStatus, comm_barrierStatus, recvTrackStatus,
+                 setLights, setBell, setBarriers},
+               comm({sendLightStatus|recvLightStatus -> comm_lightStatus,
+                     sendBellStatus|recvBellStatus -> comm_bellStatus,
+                     sendBarrierStatus|recvBarrierStatus -> comm_barrierStatus},
                         lights(LIGHTS_OFF)
                         ||bell(BELL_OFF)
                         ||barriers(BARRIERS_UP)
