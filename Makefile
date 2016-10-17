@@ -1,6 +1,6 @@
 PROJECT_NAME = Railway_crossing
-PFL = verified_model
-TFL = verified_model/verification_files
+PFL = Verified_model
+TFL = Verified_model/Verification_files
 
 FILES = $(PFL)/$(PROJECT_NAME).lts \
 	$(PFL)/$(PROJECT_NAME).lps

@@ -63,9 +63,7 @@ proc safety(northSafety: Safety, southSafety: Safety) =
 init 
      hide({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
            comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety},
-          allow({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
-                 comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety,
-                 setLights, setBell, setBarriers, tracksensor},
+          allow({setLights, setBell, setBarriers},
                comm({sendLights2Bell|recvLights2Bell -> comm_Lights2Bell,
                      sendLights2Safety|recvLights2Safety -> comm_Lights2Safety,
                      sendBell2Lights|recvBell2Lights -> comm_Bell2Lights,

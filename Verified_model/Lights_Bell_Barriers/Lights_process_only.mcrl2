@@ -1,0 +1,13 @@
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
+     Bell = struct BELL_ON | BELL_OFF;
+     Safety = struct TRAIN | TRAIN_CROSSING | NO_TRAIN;
+
+act setLights, sendLights2Bell, sendLights2Safety: Lights;
+    recvSafety2Lights: Safety;
+    recvBell2Lights: Bell;
+
+proc lights(lightStatus: Lights) = 
+     (lightStatus == LIGHTS_OFF) -> (recvSafety2Lights(TRAIN).setLights(LIGHTS_ON).lights(LIGHTS_ON) + sendLights2Safety(lightStatus).lights())
+     + (lightStatus == LIGHTS_ON) -> sendLights2Bell(lightStatus).recvBell2Lights(BELL_OFF).setLights(LIGHTS_OFF).lights(LIGHTS_OFF);
+
+init lights(LIGHTS_OFF);
