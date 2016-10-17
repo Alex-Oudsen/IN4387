@@ -1,1 +1,0 @@
-[true* . setBarriers(BARRIERS_RAISED) . (!setBarriers(BARRIERS_SET))* . (tracksensor(NORTH, MIDDLE, TRIPPED) || tracksensor(SOUTH, MIDDLE, TRIPPED))]false

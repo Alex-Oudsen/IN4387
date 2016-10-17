@@ -1,1 +1,0 @@
-[true* . setBarriers(BARRIERS_SET) . (!setBarriers(BARRIERS_RAISED))* . setLights(LIGHTS_OFF)]false

@@ -1,1 +1,0 @@
-[true* . setBell(BELL_ON) . (!setBell(BELL_OFF))* . setLights(LIGHTS_OFF)]false
