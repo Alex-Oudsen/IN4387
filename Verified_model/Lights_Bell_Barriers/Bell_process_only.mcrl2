@@ -1,0 +1,13 @@
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
+     Bell = struct BELL_ON | BELL_OFF;
+     Barriers = struct BARRIERS_SET | BARRIERS_RAISED;
+
+act recvLights2Bell: Lights;
+    recvBarriers2Bell: Barriers;
+    setBell, sendBell2Lights, sendBell2Barriers: Bell;
+
+proc bell(bellStatus: Bell) = 
+     (bellStatus == BELL_OFF) -> (recvLights2Bell(LIGHTS_ON).setBell(BELL_ON).bell(BELL_ON) + sendBell2Lights(bellStatus).bell())
+     + (bellStatus == BELL_ON) -> sendBell2Barriers(bellStatus).recvBarriers2Bell(BARRIERS_RAISED).setBell(BELL_OFF).bell(BELL_OFF);
+
+init bell(BELL_OFF);

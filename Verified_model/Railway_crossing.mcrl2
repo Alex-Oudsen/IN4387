@@ -1,0 +1,85 @@
+sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
+     Bell = struct BELL_ON | BELL_OFF;
+     Barriers = struct BARRIERS_SET | BARRIERS_RAISED;
+     Safety = struct TRAIN | NO_TRAIN;
+     Track = struct NONE | EB | WB;
+     Sensor = struct TRIPPED | IDLE;
+     TrackID = struct NORTH | SOUTH;
+     SensorID = struct WEST | MIDDLE | EAST;
+
+act setLights, sendLights2Bell, recvLights2Bell, comm_Lights2Bell: Lights;
+    sendLights2Safety, recvLights2Safety, comm_Lights2Safety: Lights;
+    setBell, sendBell2Lights, recvBell2Lights, comm_Bell2Lights: Bell;
+    sendBell2Barriers, recvBell2Barriers, comm_Bell2Barriers: Bell;
+    setBarriers, sendBarriers2Bell, recvBarriers2Bell, comm_Barriers2Bell: Barriers;
+    sendBarriers2Track, recvBarriers2Track, comm_Barriers2Track: Barriers;
+    sendSafety2Lights, recvSafety2Lights, comm_Safety2Lights: Safety;
+    sendSafety2Barriers, recvSafety2Barriers, comm_Safety2Barriers: Safety;
+    sendTrack2Safety, recvTrack2Safety, comm_Track2Safety: TrackID # Track;
+    tracksensor: TrackID # SensorID # Sensor;
+
+proc lights(lightStatus: Lights) = 
+     (lightStatus == LIGHTS_OFF) -> (recvSafety2Lights(TRAIN).setLights(LIGHTS_ON).lights(LIGHTS_ON) + sendLights2Safety(lightStatus).lights())
+     + (lightStatus == LIGHTS_ON) -> sendLights2Bell(lightStatus).recvBell2Lights(BELL_OFF).setLights(LIGHTS_OFF).lights(LIGHTS_OFF);
+
+proc bell(bellStatus: Bell) = 
+     (bellStatus == BELL_OFF) -> (recvLights2Bell(LIGHTS_ON).setBell(BELL_ON).bell(BELL_ON) + sendBell2Lights(bellStatus).bell())
+     + (bellStatus == BELL_ON) -> sendBell2Barriers(bellStatus).recvBarriers2Bell(BARRIERS_RAISED).setBell(BELL_OFF).bell(BELL_OFF);
+
+proc barriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_RAISED) -> (recvBell2Barriers(BELL_ON).setBarriers(BARRIERS_SET).barriers(BARRIERS_SET) + sendBarriers2Bell(barrierStatus).barriers())
+     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Track(barrierStatus).recvSafety2Barriers(NO_TRAIN).setBarriers(BARRIERS_RAISED).barriers(BARRIERS_RAISED);
+
+proc track(northState: Track, southState: Track, northCrossing: Bool, southCrossing: Bool) =
+     (northState == NONE && southState == NONE) -> ((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).recvBarriers2Track(BARRIERS_SET)
+     .track(northState = EB) + tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, WB).recvBarriers2Track(BARRIERS_SET).track(northState = WB)) +
+     (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, EB).recvBarriers2Track(BARRIERS_SET).track(southState = EB) + tracksensor(SOUTH, EAST, TRIPPED)
+     .sendTrack2Safety(SOUTH, WB).recvBarriers2Track(BARRIERS_SET).track(southState = WB)))
+     + (northState == NONE && southState != NONE) -> (tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).track(northState = EB) + 
+     tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, WB).track(northState = WB))
+     + (northState != NONE && southState == NONE) -> (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, EB).track(southState = EB) +
+     tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, WB).track(southState = WB))
+     + (northState == EB && northCrossing == false) -> (tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE))
+     + (northState == WB && northCrossing == false) -> (tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE))
+     + (southState == EB && southCrossing == false) -> (tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE))
+     + (southState == WB && southCrossing == false) -> (tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE))
+     + (northState == EB && northCrossing) -> (tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) + 
+     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = WB))
+     + (northState == WB && northCrossing) -> (tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) +
+     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = EB))
+     + (southState == EB && southCrossing) -> (tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
+     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = WB))
+     + (southState == WB && southCrossing) -> (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
+     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = EB));
+
+proc safety(northSafety: Safety, southSafety: Safety) =
+     (northSafety == NO_TRAIN) -> (recvTrack2Safety(NORTH, EB) + recvTrack2Safety(NORTH, WB)).safety(northSafety = TRAIN)
+     + (southSafety == NO_TRAIN) -> (recvTrack2Safety(SOUTH, EB) + recvTrack2Safety(SOUTH, WB)).safety(southSafety = TRAIN)
+     + (northSafety == TRAIN && southSafety == NO_TRAIN) -> recvTrack2Safety(NORTH, NONE).sendSafety2Barriers(NO_TRAIN).recvLights2Safety(LIGHTS_OFF).safety(northSafety = NO_TRAIN)
+     + (northSafety == NO_TRAIN && southSafety == TRAIN) -> recvTrack2Safety(SOUTH, NONE).sendSafety2Barriers(NO_TRAIN).recvLights2Safety(LIGHTS_OFF).safety(southSafety = NO_TRAIN)
+     + (northSafety == TRAIN && southSafety == TRAIN) -> (recvTrack2Safety(NORTH, NONE).safety(northSafety = NO_TRAIN) + recvTrack2Safety(SOUTH, NONE).safety(southSafety = NO_TRAIN))
+     + (northSafety == TRAIN || southSafety == TRAIN) -> sendSafety2Lights(TRAIN).safety();
+
+init 
+     hide({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
+           comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety},
+          allow({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
+                 comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety,
+                 setLights, setBell, setBarriers, tracksensor},
+               comm({sendLights2Bell|recvLights2Bell -> comm_Lights2Bell,
+                     sendLights2Safety|recvLights2Safety -> comm_Lights2Safety,
+                     sendBell2Lights|recvBell2Lights -> comm_Bell2Lights,
+                     sendBell2Barriers|recvBell2Barriers -> comm_Bell2Barriers,
+                     sendBarriers2Bell|recvBarriers2Bell -> comm_Barriers2Bell,
+                     sendBarriers2Track|recvBarriers2Track -> comm_Barriers2Track,
+                     sendSafety2Lights|recvSafety2Lights -> comm_Safety2Lights,
+                     sendSafety2Barriers|recvSafety2Barriers -> comm_Safety2Barriers,
+                     sendTrack2Safety|recvTrack2Safety -> comm_Track2Safety},
+                        lights(LIGHTS_OFF)
+                        ||bell(BELL_OFF)
+                        ||barriers(BARRIERS_RAISED)
+                        ||track(NONE, NONE, false, false)
+                        ||safety(NO_TRAIN, NO_TRAIN)
+               )
+          )
+     );
