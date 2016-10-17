@@ -1,0 +1,1 @@
+[true* . setBarriers(BARRIERS_SET) . (!setBarriers(BARRIERS_RAISED))* . setBell(BELL_OFF)]false
