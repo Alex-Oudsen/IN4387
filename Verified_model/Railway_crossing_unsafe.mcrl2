@@ -4,10 +4,14 @@ sort Lights = struct LIGHTS_ON | LIGHTS_OFF;
      Sensor = struct TRIPPED | IDLE;
      TrackID = struct NORTH | SOUTH;
      SensorID = struct WEST | MIDDLE | EAST;
+     Safety = struct TRAIN | NO_TRAIN;
+     Track = struct NONE | EB | WB;
 
-act setLights: Lights;
-    setBell: Bell;
-    setBarriers: Barriers;
+act setLights, comm_Lights2Bell, comm_Lights2Safety: Lights;
+    setBell, comm_Bell2Lights, comm_Bell2Barriers: Bell;
+    setBarriers, comm_Barriers2Bell, comm_Barriers2Track: Barriers;
+    comm_Safety2Lights, comm_Safety2Barriers: Safety;
+    comm_Track2Safety: TrackID # Track;
     tracksensor: TrackID # SensorID # Sensor;
 
 proc unsafe =
@@ -22,9 +26,20 @@ proc unsafe =
      + tracksensor(NORTH, MIDDLE, TRIPPED).unsafe()
      + tracksensor(SOUTH, WEST, TRIPPED).unsafe()
      + tracksensor(SOUTH, EAST, TRIPPED).unsafe()
-     + tracksensor(SOUTH, MIDDLE, TRIPPED).unsafe();
+     + tracksensor(SOUTH, MIDDLE, TRIPPED).unsafe()
+     + comm_Lights2Bell(LIGHTS_ON)
+     + comm_Lights2Safety(LIGHTS_OFF)
+     + comm_Bell2Lights(BELL_OFF)
+     + comm_Bell2Barriers(BELL_ON)
+     + comm_Barriers2Bell(BARRIERS_RAISED)
+     + comm_Barriers2Track(BARRIERS_SET)
+     + comm_Safety2Lights(TRAIN)
+     + comm_Safety2Barriers(NO_TRAIN)
+     + comm_Track2Safety(NORTH, WB)
+     + comm_Track2Safety(NORTH, EB)
+     + comm_Track2Safety(NORTH, NONE)
+     + comm_Track2Safety(SOUTH, WB)
+     + comm_Track2Safety(SOUTH, EB)
+     + comm_Track2Safety(SOUTH, NONE);
 
-init 
-     allow({setLights, setBell, setBarriers, tracksensor},
-          unsafe()
-     );
+init unsafe();
