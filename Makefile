@@ -1,9 +1,9 @@
-PROJECT_NAME = Railway_crossing
+MODEL_NAME = Railway_crossing
 PFL = Verified_model
 TFL = Verified_model/Verification_files
 
-FILES = $(PFL)/$(PROJECT_NAME).lts \
-	$(PFL)/$(PROJECT_NAME).lps
+FILES = $(PFL)/$(MODEL_NAME).lts \
+	$(PFL)/$(MODEL_NAME).lps
 
 TESTS = $(TFL)/0-No_deadlock_is_present_in_the_system.bool \
 	$(TFL)/10-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_raised.bool \
@@ -30,12 +30,8 @@ tests: $(TESTS)
 %.lts: %.lps
 	lps2lts $< $@
 
-#Railway_Crossing.lts: Railway_Crossing.lps
-#	lps2lts -rjittyc -v $< $@
-
-%.pbes: %.mcf $(PFL)/Railway_crossing.lps
-	lps2pbes -f$< $(PFL)/Railway_crossing.lps $@
-
+%.pbes: %.mcf $(PFL)/$(MODEL_NAME).lps
+	lps2pbes -f$< $(PFL)/$(MODEL_NAME).lps $@
 
 %.bool: %.pbes
 	@pbes2bool $<
@@ -43,4 +39,3 @@ tests: $(TESTS)
 clean:
 	rm -f $(PFL)/*.lps
 	rm -f $(PFL)/*.lts
-
