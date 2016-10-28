@@ -3,7 +3,7 @@
 # the tests themselves.
 
 # Comment out SHOW_TEST to only show true or false (so leave out the test names)
-SHOW_TEST="TRUE"
+#SHOW_TEST="TRUE"
 
 function showTest {
     tmp="$1"
@@ -17,6 +17,7 @@ function showTest {
 
 DEAD_MODEL="Railway_crossing_dead"
 UNSAFE_MODEL="Railway_crossing_unsafe"
+NOHIDE_MODEL="Railway_crossing_nohide"
 EGREP_STR="(Running test:)|(^(false|true)$)"
 
 echo "Running the regular tests"
@@ -34,3 +35,7 @@ output=$(make MODEL_NAME=$UNSAFE_MODEL tests | egrep "$EGREP_STR")
 showTest "$output"
 echo
 
+echo "Running the no-hide tests"
+output=$(make MODEL_NAME=$NOHIDE_MODEL tests | egrep "$EGREP_STR")
+showTest "$output"
+echo
