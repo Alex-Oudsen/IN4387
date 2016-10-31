@@ -18,6 +18,7 @@ function showTest {
 DEAD_MODEL="Railway_crossing_dead"
 UNSAFE_MODEL="Railway_crossing_unsafe"
 NOHIDE_MODEL="Railway_crossing_nohide"
+EXTENDED_MODEL="Railway_crossing_extended"
 EGREP_STR="(Running test:)|(^(false|true)$)"
 
 echo "Running the regular tests"
@@ -37,5 +38,10 @@ echo
 
 echo "Running the no-hide tests"
 output=$(make MODEL_NAME=$NOHIDE_MODEL tests | egrep "$EGREP_STR")
+showTest "$output"
+echo
+
+echo "Running the Extended model and tests"
+output=$(make MODEL_NAME=$EXTENDED_MODEL extended-tests | egrep "$EGREP_STR")
 showTest "$output"
 echo
