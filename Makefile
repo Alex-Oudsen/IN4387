@@ -29,7 +29,7 @@ TESTS = $(TFL)/0-No_deadlock_is_present_in_the_system.bool \
 	$(TFL)/8-The_lights_cannot_be_turned_off_if_the_bell_is_on.bool \
 	$(TFL)/9-The_barriers_cannot_be_raised_if_there_is_a_train_present.bool \
 	$(TFL)/10-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_raised.bool \
-	$(TFL)/11-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_set.bool \
+	$(TFL)/11-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_set.bool
 
 
 ETFL = Verified_model/Verification_files/Extended_model
@@ -61,6 +61,9 @@ EXTENDED_TESTS = \
 	$(ETFL)/9-The_barriers_cannot_be_raised_if_there_is_a_train_present.bool \
 	$(ETFL)/10-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_raised.bool \
 	$(ETFL)/11-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_set.bool \
+	$(ETFL)/Ext1-The_exit_barriers_cannot_be_set_down_if_the_entry_barriers_have_not_yet_been_set_down.bool \
+	$(ETFL)/Ext2-The_entry_barriers_cannot_be_raised_if_the_exit_barriers_are_set_down.bool
+
 
 all: $(FILES)
 tests: $(TESTS)
