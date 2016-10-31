@@ -44,6 +44,6 @@ checked against the generated .lps file of the model by invoking the 'make tests
 the tests and show whether each test passed or not by printing true or false respectively.
 
 For extra quick verification of all requirements at once, a shorthand script 'testchecker' is also included.
-Running it will run all tests on all versions of the model through the makefile with 'make tests', 
-but will only report a single output representing if either all the tests passed,
-or at least one of them failed. The simple version of this script only run all tests for the basic model.
+Running it will run all tests on all versions of the model on a model of the users choice. It still uses
+the makefile with 'make tests', but will only report a single output representing if either all the tests passed,
+or at least one of them failed.
