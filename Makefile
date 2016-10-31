@@ -8,9 +8,8 @@ FILES = $(PFL)/$(MODEL_NAME).lts \
 
 TESTS = $(TFL)/0-No_deadlock_is_present_in_the_system.bool \
 	$(TFL)/1-The_barriers_are_set_when_a_train_passes_over_the_crossing.bool \
-	$(TFL)/1a-Trains_can_cross_if_the_barriers_are_set.bool \
-	$(TFL)/1b-Trains_cannot_cross_if_the_barriers_are_raised_init.bool \
-	$(TFL)/1c-Trains_cannot_cross_if_the_barriers_are_raised_no_init.bool \
+	$(TFL)/1a-Trains_cannot_cross_if_the_barriers_are_raised_init.bool \
+	$(TFL)/1b-Trains_cannot_cross_if_the_barriers_are_raised_no_init.bool \
 	$(TFL)/2-The_barriers_cannot_be_set_when_there_are_no_trains_present.bool \
 	$(TFL)/2a-The_barriers_cannot_be_set_when_there_are_no_trains_present_init.bool \
 	$(TFL)/2b-The_barriers_cannot_be_set_when_there_are_no_trains_present_no_init.bool \
@@ -40,9 +39,8 @@ EXTENDED_FILES = $(PFL)/$(MODEL_NAME).lts \
 EXTENDED_TESTS = \
 	$(ETFL)/0-No_deadlock_is_present_in_the_system.bool \
 	$(ETFL)/1-The_barriers_are_set_when_a_train_passes_over_the_crossing.bool \
-	$(ETFL)/1a-Trains_can_cross_if_the_barriers_are_set.bool \
-	$(ETFL)/1b-Trains_cannot_cross_if_the_barriers_are_raised_init.bool \
-	$(ETFL)/1c-Trains_cannot_cross_if_the_barriers_are_raised_no_init.bool \
+	$(ETFL)/1a-Trains_cannot_cross_if_the_barriers_are_raised_init.bool \
+	$(ETFL)/1b-Trains_cannot_cross_if_the_barriers_are_raised_no_init.bool \
 	$(ETFL)/2-The_barriers_cannot_be_set_when_there_are_no_trains_present.bool \
 	$(ETFL)/2a-The_barriers_cannot_be_set_when_there_are_no_trains_present_init.bool \
 	$(ETFL)/2b-The_barriers_cannot_be_set_when_there_are_no_trains_present_no_init.bool \
