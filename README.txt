@@ -12,7 +12,7 @@ Lourens Pool	4084861
 *****************
 Apart from this readme, the zip archive also contains a folder, Verified_model, containing
 all mcrl2 files and verification tests in .mcf format used in the project.
-Also, a makefile, a testchecker and a simple-testchecker have been supplied.
+Also, a makefile and a testchecker have been supplied.
 
 Railway_crossing.mcrl2 contains the basic railway crossing model. This is the model that is
 described in the report and used during verification of the basic crossing. In addition to this file,
