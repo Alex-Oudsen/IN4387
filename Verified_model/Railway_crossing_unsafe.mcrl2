@@ -14,32 +14,18 @@ act setLights, comm_Lights2Bell, comm_Lights2Safety: Lights;
     comm_Track2Safety: TrackID # Track;
     tracksensor: TrackID # SensorID # Sensor;
 
-proc unsafe =
-     setLights(LIGHTS_ON).unsafe()
-     + setLights(LIGHTS_OFF).unsafe()
-     + setBell(BELL_ON).unsafe()
-     + setBell(BELL_OFF).unsafe()
-     + setBarriers(BARRIERS_SET).unsafe()
-     + setBarriers(BARRIERS_RAISED).unsafe()
-     + tracksensor(NORTH, WEST, TRIPPED).unsafe()
-     + tracksensor(NORTH, EAST, TRIPPED).unsafe()
-     + tracksensor(NORTH, MIDDLE, TRIPPED).unsafe()
-     + tracksensor(SOUTH, WEST, TRIPPED).unsafe()
-     + tracksensor(SOUTH, EAST, TRIPPED).unsafe()
-     + tracksensor(SOUTH, MIDDLE, TRIPPED).unsafe()
-     + comm_Lights2Bell(LIGHTS_ON)
-     + comm_Lights2Safety(LIGHTS_OFF)
-     + comm_Bell2Lights(BELL_OFF)
-     + comm_Bell2Barriers(BELL_ON)
-     + comm_Barriers2Bell(BARRIERS_RAISED)
-     + comm_Barriers2Track(BARRIERS_SET)
-     + comm_Safety2Lights(TRAIN)
-     + comm_Safety2Barriers(NO_TRAIN)
-     + comm_Track2Safety(NORTH, WB)
-     + comm_Track2Safety(NORTH, EB)
-     + comm_Track2Safety(NORTH, NONE)
-     + comm_Track2Safety(SOUTH, WB)
-     + comm_Track2Safety(SOUTH, EB)
-     + comm_Track2Safety(SOUTH, NONE);
+proc unsafe(lights: Lights, bell: Bell, barriers: Barriers, ntrack: Track, strack: Track, safety: Safety) =
+     setLights(LIGHTS_ON).comm_Lights2Bell(LIGHTS_ON).unsafe(lights = LIGHTS_ON)
+     + setLights(LIGHTS_OFF).comm_Lights2Safety(LIGHTS_OFF).unsafe(lights = LIGHTS_OFF)
+     + setBell(BELL_ON).comm_Bell2Barriers(BELL_ON).unsafe(bell = BELL_ON)
+     + setBell(BELL_OFF).comm_Bell2Lights(BELL_OFF).unsafe(bell = BELL_OFF)
+     + setBarriers(BARRIERS_SET).comm_Barriers2Track(BARRIERS_SET).unsafe(barriers = BARRIERS_SET)
+     + setBarriers(BARRIERS_RAISED).comm_Barriers2Bell(BARRIERS_RAISED).unsafe(barriers = BARRIERS_RAISED)
+     + tracksensor(NORTH, WEST, TRIPPED).comm_Track2Safety(NORTH, EB).comm_Safety2Lights(TRAIN).unsafe(ntrack = EB, safety = TRAIN)
+     + tracksensor(NORTH, EAST, TRIPPED).comm_Track2Safety(NORTH, WB).comm_Safety2Lights(TRAIN).unsafe(ntrack = WB, safety = TRAIN)
+     + tracksensor(NORTH, MIDDLE, TRIPPED).comm_Track2Safety(NORTH, NONE).comm_Safety2Barriers(NO_TRAIN).unsafe(ntrack = NONE, safety = NO_TRAIN)
+     + tracksensor(SOUTH, WEST, TRIPPED).comm_Track2Safety(SOUTH, EB).comm_Safety2Lights(TRAIN).unsafe(strack = EB, safety = TRAIN)
+     + tracksensor(SOUTH, EAST, TRIPPED).comm_Track2Safety(SOUTH, WB).comm_Safety2Lights(TRAIN).unsafe(strack = WB, safety = TRAIN)
+     + tracksensor(SOUTH, MIDDLE, TRIPPED).comm_Track2Safety(SOUTH, NONE).comm_Safety2Barriers(NO_TRAIN).unsafe(strack = NONE, safety = NO_TRAIN);
 
-init unsafe();
+init unsafe(LIGHTS_OFF, BELL_OFF, BARRIERS_SET, NONE, NONE, NO_TRAIN);
