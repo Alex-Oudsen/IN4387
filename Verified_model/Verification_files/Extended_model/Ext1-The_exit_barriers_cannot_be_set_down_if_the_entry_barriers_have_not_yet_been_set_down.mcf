@@ -1,1 +1,1 @@
-[(!setBell(BELL_ON))* .(setEntryBarriers(BARRIERS_SET) || setExitBarriers(BARRIERS_SET))]false && [true* .setBell(BELL_OFF) .(!setBell(BELL_ON))* .(setEntryBarriers(BARRIERS_SET) || setExitBarriers(BARRIERS_SET))]false
+[(!setEntryBarriers(BARRIERS_SET))* .setExitBarriers(BARRIERS_SET)]false && [true* .setEntryBarriers(BARRIERS_RAISED) .(!setEntryBarriers(BARRIERS_SET))* .setExitBarriers(BARRIERS_SET)]false
