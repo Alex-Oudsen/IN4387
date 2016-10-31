@@ -27,7 +27,6 @@ TESTS = $(TFL)/0-No_deadlock_is_present_in_the_system.bool \
 	$(TFL)/6b-The_barriers_cannot_be_set_if_the_bell_has_not_yet_been_turned_on_no_init.bool \
 	$(TFL)/7-The_bell_cannot_be_turned_off_if_the_barriers_are_set.bool \
 	$(TFL)/8-The_lights_cannot_be_turned_off_if_the_bell_is_on.bool \
-	$(TFL)/9-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_set.bool \
 	$(TFL)/9-The_barriers_cannot_be_raised_if_there_is_a_train_present.bool \
 	$(TFL)/10-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_raised.bool \
 	$(TFL)/11-From_every_reachable_state_there_is_a_sequence_of_actions_to_a_state_in_which_the_barriers_are_set.bool \
