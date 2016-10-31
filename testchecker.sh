@@ -3,7 +3,7 @@
 # the tests themselves.
 
 # Comment out SHOW_TEST to only show true or false (so leave out the test names)
-#SHOW_TEST="TRUE"
+SHOW_TEST="TRUE"
 
 function showTest {
     tmp="$1"
