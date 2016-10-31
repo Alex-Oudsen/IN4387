@@ -1,0 +1,12 @@
+sort Safety = struct TRAIN | NO_TRAIN;
+     Barriers = struct BARRIERS_SET | BARRIERS_RAISED;
+
+act recvSafety2Barriers: Safety;
+    setExitBarriers, sendBarriers2Track: Barriers;
+    sendBarriers2Barriers, recvBarriers2Barriers: Barriers;
+
+proc exitbarriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_RAISED) -> (recvBarriers2Barriers(BARRIERS_SET).setExitBarriers(BARRIERS_SET).exitbarriers(BARRIERS_SET) + sendBarriers2Barriers(barrierStatus).exitbarriers())
+     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Track(barrierStatus).recvSafety2Barriers(NO_TRAIN).setExitBarriers(BARRIERS_RAISED).exitbarriers(BARRIERS_RAISED);
+
+init exitbarriers(BARRIERS_RAISED);

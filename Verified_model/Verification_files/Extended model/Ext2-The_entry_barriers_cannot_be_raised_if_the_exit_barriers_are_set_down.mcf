@@ -1,0 +1,1 @@
+[true* .setExitBarriers(BARRIERS_SET) .(!setExitBarriers(BARRIERS_RAISED))* . setEntryBarriers(BARRIERS_RAISED)]false

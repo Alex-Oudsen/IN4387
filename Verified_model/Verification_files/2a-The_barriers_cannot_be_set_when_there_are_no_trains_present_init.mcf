@@ -1,0 +1,2 @@
+
+[(!(comm_Safety2Lights(TRAIN)))* . setBarriers(BARRIERS_SET)]false

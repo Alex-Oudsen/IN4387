@@ -31,26 +31,30 @@ proc barriers(barrierStatus: Barriers) =
      + (barrierStatus == BARRIERS_SET) -> sendBarriers2Track(barrierStatus).recvSafety2Barriers(NO_TRAIN).setBarriers(BARRIERS_RAISED).barriers(BARRIERS_RAISED);
 
 proc track(northState: Track, southState: Track, northCrossing: Bool, southCrossing: Bool) =
-     (northState == NONE && southState == NONE) -> ((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).recvBarriers2Track(BARRIERS_SET)
+     (northState == NONE && southState == NONE) -> (((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).recvBarriers2Track(BARRIERS_SET)
      .track(northState = EB) + tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, WB).recvBarriers2Track(BARRIERS_SET).track(northState = WB)) +
      (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, EB).recvBarriers2Track(BARRIERS_SET).track(southState = EB) + tracksensor(SOUTH, EAST, TRIPPED)
-     .sendTrack2Safety(SOUTH, WB).recvBarriers2Track(BARRIERS_SET).track(southState = WB)))
-     + (northState == NONE && southState != NONE) -> (tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).track(northState = EB) + 
-     tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, WB).track(northState = WB))
-     + (northState != NONE && southState == NONE) -> (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, EB).track(southState = EB) +
-     tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, WB).track(southState = WB))
-     + (northState == EB && northCrossing == false) -> (tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE))
-     + (northState == WB && northCrossing == false) -> (tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE))
-     + (southState == EB && southCrossing == false) -> (tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE))
-     + (southState == WB && southCrossing == false) -> (tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE))
-     + (northState == EB && northCrossing) -> (tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) + 
-     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = WB))
-     + (northState == WB && northCrossing) -> (tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) +
-     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = EB))
-     + (southState == EB && southCrossing) -> (tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
-     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = WB))
-     + (southState == WB && southCrossing) -> (tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
-     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = EB));
+     .sendTrack2Safety(SOUTH, WB).recvBarriers2Track(BARRIERS_SET).track(southState = WB))) + (tracksensor(NORTH, MIDDLE, TRIPPED) + tracksensor(SOUTH, MIDDLE, TRIPPED)).track())
+     + (northState == NONE && southState != NONE) -> ((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).track(northState = EB) + 
+     tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, WB).track(northState = WB)) + tracksensor(NORTH, MIDDLE, TRIPPED).track())
+     + (northState != NONE && southState == NONE) -> ((tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, EB).track(southState = EB) +
+     tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, WB).track(southState = WB)) + tracksensor(SOUTH, MIDDLE, TRIPPED).track())
+     + (northState == EB && northCrossing == false) -> ((tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + 
+     tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE)) + tracksensor(NORTH, EAST, TRIPPED).track())
+     + (northState == WB && northCrossing == false) -> ((tracksensor(NORTH, MIDDLE, TRIPPED).track(northCrossing = true) + 
+     tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE)) + tracksensor(NORTH, WEST, TRIPPED).track())
+     + (southState == EB && southCrossing == false) -> ((tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + 
+     tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE)) + tracksensor(SOUTH, EAST, TRIPPED).track())
+     + (southState == WB && southCrossing == false) -> ((tracksensor(SOUTH, MIDDLE, TRIPPED).track(southCrossing = true) + 
+     tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE)) + tracksensor(SOUTH, WEST, TRIPPED).track())
+     + (northState == EB && northCrossing) -> ((tracksensor(NORTH, EAST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) + 
+     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = WB)) + tracksensor(NORTH, WEST, TRIPPED).track())
+     + (northState == WB && northCrossing) -> ((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, NONE).track(northState = NONE, northCrossing = false) +
+     tracksensor(NORTH, MIDDLE, TRIPPED).track(northState = EB)) + tracksensor(NORTH, EAST, TRIPPED).track())
+     + (southState == EB && southCrossing) -> ((tracksensor(SOUTH, EAST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
+     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = WB)) + tracksensor(SOUTH, WEST, TRIPPED).track())
+     + (southState == WB && southCrossing) -> ((tracksensor(SOUTH, WEST, TRIPPED).sendTrack2Safety(SOUTH, NONE).track(southState = NONE, southCrossing = false) +
+     tracksensor(SOUTH, MIDDLE, TRIPPED).track(southState = EB)) + tracksensor(SOUTH, EAST, TRIPPED).track());
 
 proc safety(northSafety: Safety, southSafety: Safety) =
      (northSafety == NO_TRAIN) -> (recvTrack2Safety(NORTH, EB) + recvTrack2Safety(NORTH, WB)).safety(northSafety = TRAIN)

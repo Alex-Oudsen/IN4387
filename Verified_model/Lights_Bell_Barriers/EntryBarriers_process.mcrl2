@@ -1,0 +1,12 @@
+sort Bell = struct BELL_ON | BELL_OFF;
+     Barriers = struct BARRIERS_SET | BARRIERS_RAISED;
+
+act recvBell2Barriers: Bell;
+    setEntryBarriers, sendBarriers2Bell: Barriers;
+    sendBarriers2Barriers, recvBarriers2Barriers: Barriers;
+
+proc entrybarriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_RAISED) -> (recvBell2Barriers(BELL_ON).setEntryBarriers(BARRIERS_SET).entrybarriers(BARRIERS_SET) + sendBarriers2Bell(barrierStatus).entrybarriers())
+     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Barriers(barrierStatus).recvBarriers2Barriers(BARRIERS_RAISED).setEntryBarriers(BARRIERS_RAISED).entrybarriers(BARRIERS_RAISED);
+
+init entrybarriers(BARRIERS_RAISED);

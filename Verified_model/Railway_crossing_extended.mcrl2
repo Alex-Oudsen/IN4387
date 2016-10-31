@@ -11,8 +11,9 @@ act setLights, sendLights2Bell, recvLights2Bell, comm_Lights2Bell: Lights;
     sendLights2Safety, recvLights2Safety, comm_Lights2Safety: Lights;
     setBell, sendBell2Lights, recvBell2Lights, comm_Bell2Lights: Bell;
     sendBell2Barriers, recvBell2Barriers, comm_Bell2Barriers: Bell;
-    setBarriers, sendBarriers2Bell, recvBarriers2Bell, comm_Barriers2Bell: Barriers;
+    setEntryBarriers, sendBarriers2Bell, recvBarriers2Bell, comm_Barriers2Bell: Barriers;
     sendBarriers2Track, recvBarriers2Track, comm_Barriers2Track: Barriers;
+    setExitBarriers, sendBarriers2Barriers, recvBarriers2Barriers, comm_Barriers2Barriers: Barriers;
     sendSafety2Lights, recvSafety2Lights, comm_Safety2Lights: Safety;
     sendSafety2Barriers, recvSafety2Barriers, comm_Safety2Barriers: Safety;
     sendTrack2Safety, recvTrack2Safety, comm_Track2Safety: TrackID # Track;
@@ -26,9 +27,13 @@ proc bell(bellStatus: Bell) =
      (bellStatus == BELL_OFF) -> (recvLights2Bell(LIGHTS_ON).setBell(BELL_ON).bell(BELL_ON) + sendBell2Lights(bellStatus).bell())
      + (bellStatus == BELL_ON) -> sendBell2Barriers(bellStatus).recvBarriers2Bell(BARRIERS_RAISED).setBell(BELL_OFF).bell(BELL_OFF);
 
-proc barriers(barrierStatus: Barriers) = 
-     (barrierStatus == BARRIERS_RAISED) -> (recvBell2Barriers(BELL_ON).setBarriers(BARRIERS_SET).barriers(BARRIERS_SET) + sendBarriers2Bell(barrierStatus).barriers())
-     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Track(barrierStatus).recvSafety2Barriers(NO_TRAIN).setBarriers(BARRIERS_RAISED).barriers(BARRIERS_RAISED);
+proc entrybarriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_RAISED) -> (recvBell2Barriers(BELL_ON).setEntryBarriers(BARRIERS_SET).entrybarriers(BARRIERS_SET) + sendBarriers2Bell(barrierStatus).entrybarriers())
+     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Barriers(barrierStatus).recvBarriers2Barriers(BARRIERS_RAISED).setEntryBarriers(BARRIERS_RAISED).entrybarriers(BARRIERS_RAISED);
+
+proc exitbarriers(barrierStatus: Barriers) = 
+     (barrierStatus == BARRIERS_RAISED) -> (recvBarriers2Barriers(BARRIERS_SET).setExitBarriers(BARRIERS_SET).exitbarriers(BARRIERS_SET) + sendBarriers2Barriers(barrierStatus).exitbarriers())
+     + (barrierStatus == BARRIERS_SET) -> sendBarriers2Track(barrierStatus).recvSafety2Barriers(NO_TRAIN).setExitBarriers(BARRIERS_RAISED).exitbarriers(BARRIERS_RAISED);
 
 proc track(northState: Track, southState: Track, northCrossing: Bool, southCrossing: Bool) =
      (northState == NONE && southState == NONE) -> (((tracksensor(NORTH, WEST, TRIPPED).sendTrack2Safety(NORTH, EB).recvBarriers2Track(BARRIERS_SET)
@@ -64,12 +69,13 @@ proc safety(northSafety: Safety, southSafety: Safety) =
      + (northSafety == TRAIN && southSafety == TRAIN) -> (recvTrack2Safety(NORTH, NONE).safety(northSafety = NO_TRAIN) + recvTrack2Safety(SOUTH, NONE).safety(southSafety = NO_TRAIN))
      + (northSafety == TRAIN || southSafety == TRAIN) -> sendSafety2Lights(TRAIN).safety();
 
+
 init 
      hide({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
-           comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety},
+           comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety, comm_Barriers2Barriers},
           allow({comm_Lights2Bell, comm_Lights2Safety, comm_Bell2Lights, comm_Bell2Barriers, comm_Barriers2Bell,
-                 comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety,
-                 setLights, setBell, setBarriers, tracksensor},
+                 comm_Barriers2Track, comm_Safety2Lights, comm_Safety2Barriers, comm_Track2Safety, comm_Barriers2Barriers,
+                 setLights, setBell, setEntryBarriers, setExitBarriers, tracksensor},
                comm({sendLights2Bell|recvLights2Bell -> comm_Lights2Bell,
                      sendLights2Safety|recvLights2Safety -> comm_Lights2Safety,
                      sendBell2Lights|recvBell2Lights -> comm_Bell2Lights,
@@ -78,10 +84,12 @@ init
                      sendBarriers2Track|recvBarriers2Track -> comm_Barriers2Track,
                      sendSafety2Lights|recvSafety2Lights -> comm_Safety2Lights,
                      sendSafety2Barriers|recvSafety2Barriers -> comm_Safety2Barriers,
-                     sendTrack2Safety|recvTrack2Safety -> comm_Track2Safety},
+                     sendTrack2Safety|recvTrack2Safety -> comm_Track2Safety,
+                     sendBarriers2Barriers|recvBarriers2Barriers -> comm_Barriers2Barriers},
                         lights(LIGHTS_OFF)
                         ||bell(BELL_OFF)
-                        ||barriers(BARRIERS_RAISED)
+                        ||entrybarriers(BARRIERS_RAISED)
+		 ||exitbarriers(BARRIERS_RAISED)
                         ||track(NONE, NONE, false, false)
                         ||safety(NO_TRAIN, NO_TRAIN)
                )

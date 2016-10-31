@@ -1,0 +1,1 @@
+[true* . comm_Safety2Lights(TRAIN) . (!(comm_Safety2Barriers(NO_TRAIN)))* . setBarriers(BARRIERS_RAISED) ] false

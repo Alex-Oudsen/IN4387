@@ -1,0 +1,3 @@
+
+
+[true* . comm_Safety2Barriers(NO_TRAIN) . (!(comm_Safety2Lights(TRAIN)))* . setBell(BELL_ON)]false
